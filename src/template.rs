@@ -18,12 +18,12 @@ fn part2(_input: impl Iterator<Item = String>) -> u32 {
 mod tests {
     use super::{part1, part2, read_file};
 
-    const EXAMPLE: &str = "
+    const EXAMPLE1: &str = "
 ";
 
     #[test]
     fn test_part1_example() {
-        assert_eq!(part1(EXAMPLE.lines().map(|v| v.to_string())), 0);
+        assert_eq!(part1(EXAMPLE1.lines().map(|v| v.to_string())), 0);
     }
 
     #[test]
@@ -33,9 +33,12 @@ mod tests {
         // assert_eq!(res, 0);
     }
 
+    const EXAMPLE2: &str = "
+";
+
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE.lines().map(|v| v.to_string())), 0);
+        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
     }
 
     #[test]
