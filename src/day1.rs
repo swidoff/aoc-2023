@@ -40,7 +40,6 @@ const DIGITS: [(&str, u64); 18] = [
 ];
 
 fn digits_from_string(s: &String) -> Vec<u64> {
-    let s = s.as_str();
     let mut res = Vec::new();
     for i in 0..s.len() {
         let suffix = &s[i..];
