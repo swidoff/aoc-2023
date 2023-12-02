@@ -5,7 +5,7 @@ use std::str::FromStr;
 use itertools::Itertools;
 
 fn read_file() -> impl Iterator<Item = String> {
-    let file = File::open("input/day1.txt").unwrap();
+    let file = File::open("../input/day01.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
