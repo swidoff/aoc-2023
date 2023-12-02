@@ -8,7 +8,7 @@ fn read_file() -> impl Iterator<Item = String> {
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-fn max_drawn_per_color(game: &String) -> (u32, u32, u32) {
+fn max_drawn_per_color(game: &String) -> [u32; 3] {
     let (_game, draws) = game.split(": ").collect_tuple().unwrap();
     draws
         .split("; ")
@@ -18,10 +18,10 @@ fn max_drawn_per_color(game: &String) -> (u32, u32, u32) {
             let num = u32::from_str(num).unwrap();
             (num, color)
         })
-        .fold((0, 0, 0), |(mr, mg, mb), (num, color)| match color {
-            "red" => (mr.max(num), mg, mb),
-            "green" => (mr, mg.max(num), mb),
-            "blue" => (mr, mg, mb.max(num)),
+        .fold([0, 0, 0], |[mr, mg, mb], (num, color)| match color {
+            "red" => [mr.max(num), mg, mb],
+            "green" => [mr, mg.max(num), mb],
+            "blue" => [mr, mg, mb.max(num)],
             _ => panic!(),
         })
 }
@@ -30,7 +30,7 @@ fn part1(input: impl Iterator<Item = String>) -> usize {
     input
         .map(|s| max_drawn_per_color(&s))
         .enumerate()
-        .filter_map(|(i, (max_r, max_g, max_b))| {
+        .filter_map(|(i, [max_r, max_g, max_b])| {
             if max_r <= 12 && max_g <= 13 && max_b <= 14 {
                 Some(i + 1)
             } else {
@@ -43,7 +43,7 @@ fn part1(input: impl Iterator<Item = String>) -> usize {
 fn part2(input: impl Iterator<Item = String>) -> u32 {
     input
         .map(|s| max_drawn_per_color(&s))
-        .map(|(max_r, max_g, max_b)| max_r * max_g * max_b)
+        .map(|d| d.iter().sum::<u32>())
         .sum()
 }
 
