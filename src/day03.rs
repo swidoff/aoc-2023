@@ -40,14 +40,15 @@ fn parse_schematic(
                 if digits > 0 {
                     let start_col = col - digits;
                     let end_col = col - 1;
+                    let value = ElementType::Number(number);
                     let n = Element {
-                        value: ElementType::Number(number),
+                        value,
                         row,
                         start_col,
                         end_col,
                     };
                     for c in start_col..(end_col + 1) {
-                        locations.insert((row, c), n.value);
+                        locations.insert((row, c), value);
                     }
                     elements.push(n);
 
@@ -55,13 +56,14 @@ fn parse_schematic(
                     digits = 0;
                 }
                 if char != '.' {
+                    let value = ElementType::Symbol(char);
                     let s = Element {
-                        value: ElementType::Symbol(char),
+                        value,
                         row,
                         start_col: col,
                         end_col: col,
                     };
-                    locations.insert((row, col), s.value);
+                    locations.insert((row, col), value);
                     elements.push(s);
                 }
             }
@@ -81,11 +83,9 @@ fn find_adjacent<'a>(
     } else {
         e.start_col
     };
-    let end_row = e.row + 1;
-    let end_col = e.end_col + 1;
     let mut res = HashSet::new();
-    for row in start_row..(end_row + 1) {
-        for col in start_col..(end_col + 1) {
+    for row in start_row..(e.row + 2) {
+        for col in start_col..(e.end_col + 2) {
             if row == e.row && col >= e.start_col && col <= e.end_col {
                 continue;
             } else if let Some(adjacent) = locations.get(&(row, col)) {
