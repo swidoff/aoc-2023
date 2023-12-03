@@ -38,33 +38,20 @@ fn parse_schematic(
                 digits += 1
             } else {
                 if digits > 0 {
+                    let value = ElementType::Number(number);
                     let start_col = col - digits;
                     let end_col = col - 1;
-                    let value = ElementType::Number(number);
-                    let n = Element {
-                        value,
-                        row,
-                        start_col,
-                        end_col,
-                    };
                     for c in start_col..(end_col + 1) {
                         locations.insert((row, c), value);
                     }
-                    elements.push(n);
-
+                    elements.push(Element { value, row, start_col, end_col });
                     number = 0;
                     digits = 0;
                 }
                 if char != '.' {
                     let value = ElementType::Symbol(char);
-                    let s = Element {
-                        value,
-                        row,
-                        start_col: col,
-                        end_col: col,
-                    };
                     locations.insert((row, col), value);
-                    elements.push(s);
+                    elements.push(Element { value, row, start_col: col, end_col: col });
                 }
             }
         }
@@ -78,11 +65,7 @@ fn find_adjacent<'a>(
     locations: &'a HashMap<(usize, usize), ElementType>,
 ) -> HashSet<&'a ElementType> {
     let start_row = if e.row > 0 { e.row - 1 } else { e.row };
-    let start_col = if e.start_col > 0 {
-        e.start_col - 1
-    } else {
-        e.start_col
-    };
+    let start_col = if e.start_col > 0 { e.start_col - 1 } else { e.start_col };
     let mut res = HashSet::new();
     for row in start_row..(e.row + 2) {
         for col in start_col..(e.end_col + 2) {
@@ -100,20 +83,20 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
     let (elements, locations) = parse_schematic(input);
     elements
         .iter()
+        // Filter to numbers and extract the value
         .filter_map(|n| match n.value {
-            ElementType::Number(value) => {
-                let has_adjacent_symbol = find_adjacent(n, &locations).iter().any(|&v| match v {
-                    ElementType::Symbol(_) => true,
-                    _ => false,
-                });
-                if has_adjacent_symbol {
-                    Some(value)
-                } else {
-                    None
-                }
-            }
-            _ => None,
+            ElementType::Number(v) => Some((n, v)),
+            ElementType::Symbol(_) => None,
         })
+        // Check that the number is adjacent to a symbol.
+        .filter(|(n, v)| {
+            find_adjacent(n, &locations).iter().any(|&v| match v {
+                ElementType::Symbol(_) => true,
+                _ => false,
+            })
+        })
+        // Sum the values.
+        .map(|(n, v)| v)
         .sum()
 }
 
@@ -132,17 +115,11 @@ fn part2(input: impl Iterator<Item = String>) -> u64 {
                 .iter()
                 .fold((1, 0), |(prod, count), &adj| match adj {
                     ElementType::Number(v) => (prod * v, count + 1),
-                    ElementType::Symbol(_) => (0, 0),
+                    ElementType::Symbol(_) => (0, 0), // Product will now only be zero.
                 })
         })
-        // Keep only results with 2 numeric neighbors
-        .filter_map(|(prod, count)| {
-            if prod > 0 && count == 2 {
-                Some(prod)
-            } else {
-                None
-            }
-        })
+        // Keep only results with 2 numeric neighbors and no symbol neighbors (prod == 0)
+        .filter_map(|(prod, count)| if prod > 0 && count == 2 { Some(prod) } else { None })
         .sum()
 }
 
