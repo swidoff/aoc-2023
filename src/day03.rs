@@ -89,14 +89,14 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
             ElementType::Symbol(_) => None,
         })
         // Check that the number is adjacent to a symbol.
-        .filter(|(n, v)| {
+        .filter(|(n, _v)| {
             find_adjacent(n, &locations).iter().any(|&v| match v {
                 ElementType::Symbol(_) => true,
                 _ => false,
             })
         })
         // Sum the values.
-        .map(|(n, v)| v)
+        .map(|(_n, v)| v)
         .sum()
 }
 
