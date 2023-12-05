@@ -9,6 +9,8 @@ fn read_file() -> impl Iterator<Item = String> {
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
+/// Convert the input to ranges (source_start, source_end, dest_start, dest_end) for convenience.
+///
 fn parse_input(input: impl Iterator<Item = String>) -> (Vec<u64>, Vec<Vec<(u64, u64, u64, u64)>>) {
     let mut seeds = Vec::new();
     let mut maps = Vec::new();
@@ -66,63 +68,79 @@ fn part2(input: impl Iterator<Item = String>) -> u64 {
     let (seeds, maps) = parse_input(input);
     let mut locs = Vec::new();
 
+    // Operate on ranges rather than individual locations.
     for (&seed_start, &seed_range) in seeds.iter().tuples() {
         locs.push((seed_start, seed_start + seed_range - 1));
     }
 
     for level in 0..maps.len() {
-        locs.sort();
-
-        let mut current = None;
-        let mut q = VecDeque::new();
-        for &(start, end) in locs.iter() {
-            if let Some((current_start, current_end)) = current {
-                if start >= current_start && start <= current_end {
-                    current = Some((current_start, end.max(current_end)))
-                } else {
-                    q.push_back((current_start, current_end));
-                    current = Some((start, end))
-                }
-            } else {
-                current = Some((start, end))
-            }
-        }
-        if let Some((start, end)) = current {
-            q.push_back((start, end))
-        }
-
-        let mut next_locs = Vec::new();
-        while let Some((start, end)) = q.pop_front() {
-            let mut overlap_found = false;
-            for &(source_start, source_end, dest_start, _dest_end) in
-                maps.get(level).unwrap().iter()
-            {
-                let overlap_start = start.max(source_start);
-                let overlap_end = end.min(source_end);
-                if overlap_start <= overlap_end {
-                    let new_start = dest_start + (overlap_start - source_start);
-                    let new_end = dest_start + (overlap_end - source_start);
-                    next_locs.push((new_start, new_end));
-
-                    if start < overlap_start {
-                        q.push_front((start, overlap_start - 1));
-                    }
-                    if overlap_end < end {
-                        q.push_front((overlap_end + 1, end));
-                    }
-                    overlap_found = true;
-                    break;
-                }
-            }
-            if !overlap_found {
-                next_locs.push((start, end))
-            }
-        }
-
-        locs = next_locs;
+        // 1. Merge the ranges to collapse any overlap.
+        // 2. Map the previous locations to the next level locations.
+        let mut q = merge_ranges(&mut locs);
+        locs = map_ranges(&mut q, maps.get(level).unwrap());
     }
 
     locs.iter().map(|&(start, _end)| start).min().unwrap()
+}
+
+/// Sort the ranges and merge consecutive ranges that overlap.
+///
+fn merge_ranges(locs: &mut Vec<(u64, u64)>) -> VecDeque<(u64, u64)> {
+    locs.sort();
+
+    let mut current = None;
+    let mut q = VecDeque::new();
+    for &(start, end) in locs.iter() {
+        if let Some((current_start, current_end)) = current {
+            if start >= current_start && start <= current_end {
+                current = Some((current_start, end.max(current_end)))
+            } else {
+                q.push_back((current_start, current_end));
+                current = Some((start, end))
+            }
+        } else {
+            current = Some((start, end))
+        }
+    }
+    if let Some((start, end)) = current {
+        q.push_back((start, end))
+    }
+    q
+}
+
+fn map_ranges(
+    ranges: &mut VecDeque<(u64, u64)>,
+    map: &Vec<(u64, u64, u64, u64)>,
+) -> Vec<(u64, u64)> {
+    // There's probably a more clever way to do this with binary search so you don't have to
+    // scan the rules linearly and calculate messy overlap, but not going to bother. This is fast
+    // enough.
+    let mut next_locs = Vec::new();
+    while let Some((start, end)) = ranges.pop_front() {
+        let mut overlap_found = false;
+        for &(source_start, source_end, dest_start, _dest_end) in map.iter() {
+            let overlap_start = start.max(source_start);
+            let overlap_end = end.min(source_end);
+            if overlap_start <= overlap_end {
+                let new_start = dest_start + (overlap_start - source_start);
+                let new_end = dest_start + (overlap_end - source_start);
+                next_locs.push((new_start, new_end));
+
+                if start < overlap_start {
+                    ranges.push_front((start, overlap_start - 1));
+                }
+                if overlap_end < end {
+                    ranges.push_front((overlap_end + 1, end));
+                }
+                overlap_found = true;
+                break;
+            }
+        }
+        if !overlap_found {
+            next_locs.push((start, end))
+        }
+    }
+    next_locs
 }
 
 #[cfg(test)]
