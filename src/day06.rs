@@ -16,6 +16,10 @@ fn part2(time: u64, distance: u64) -> u64 {
 }
 
 fn solve_race(time: u64, distance: u64) -> u64 {
+    // Solve the inequality for t: t*(time - t) > d => -t^2 + time*t - d > 0
+    // Use quadratic equation to find the roots. The difference between the roots is the
+    // region where the inequality is true. If the roots are integers, those are the points where
+    // the equation exactly equals zero, so we need to nudge them a bit in the right direction.
     let t = time as f64;
     let d = distance as f64;
     let mut r1 = (t - (t.powf(2.) - 4. * d).sqrt()) / 2.;
