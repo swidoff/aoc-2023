@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::BufRead;
 
 fn part1(races: &Vec<(u64, u64)>) -> u64 {
     let mut res = 1;
