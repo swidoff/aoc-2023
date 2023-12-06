@@ -49,9 +49,6 @@ mod tests {
         assert_eq!(res, 5133600);
     }
 
-    const EXAMPLE2: &str = "
-";
-
     #[test]
     fn test_part2_example() {
         assert_eq!(part2(71530, 940200), 71503);
