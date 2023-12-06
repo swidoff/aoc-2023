@@ -6,11 +6,11 @@ fn read_file() -> impl Iterator<Item = String> {
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-fn part1(_input: impl Iterator<Item = String>) -> u32 {
+fn part1(_input: impl Iterator<Item = String>) -> u64 {
     unimplemented!()
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u32 {
+fn part2(_input: impl Iterator<Item = String>) -> u64 {
     unimplemented!()
 }
 
