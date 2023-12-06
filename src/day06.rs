@@ -1,16 +1,10 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-fn part1(races: &Vec<(u64, u64)>) -> usize {
+fn part1(races: &Vec<(u64, u64)>) -> u64 {
     let mut res = 1;
     for &(time, distance) in races.iter() {
-        let mut ways = 0;
-        for t in 1..time {
-            let final_distance = t * (time - t);
-            if final_distance > distance {
-                ways += 1;
-            }
-        }
+        let mut ways = solve_race(time, distance);
         if ways > 0 {
             res *= ways;
         }
@@ -19,14 +13,21 @@ fn part1(races: &Vec<(u64, u64)>) -> usize {
 }
 
 fn part2(time: u64, distance: u64) -> u64 {
-    let mut ways = 0;
-    for t in 1..time {
-        let final_distance = t * (time - t);
-        if final_distance > distance {
-            ways += 1;
-        }
+    return solve_race(time, distance);
+}
+
+fn solve_race(time: u64, distance: u64) -> u64 {
+    let t = time as f64;
+    let d = distance as f64;
+    let mut r1 = (t - (t.powf(2.) - 4. * d).sqrt()) / 2.;
+    let mut r2 = (t + (t.powf(2.) - 4. * d).sqrt()) / 2.;
+    if r1.ceil() == r1 {
+        r1 += 0.01;
     }
-    ways
+    if r2.floor() == r2 {
+        r2 -= 0.01;
+    }
+    (r2.floor() - r1.ceil() + 1.) as u64
 }
 
 #[cfg(test)]
