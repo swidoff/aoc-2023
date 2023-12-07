@@ -1,9 +1,7 @@
-use std::io::BufRead;
-
 fn part1(races: &Vec<(u64, u64)>) -> u64 {
     let mut res = 1;
     for &(time, distance) in races.iter() {
-        let mut ways = solve_race(time, distance);
+        let ways = solve_race(time, distance);
         if ways > 0 {
             res *= ways;
         }
