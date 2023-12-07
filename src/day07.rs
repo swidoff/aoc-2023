@@ -41,16 +41,16 @@ fn type_rank(cards: &Vec<u32>) -> u32 {
             counts[0] = 0
         }
     }
-
-    let (top1, top2) = counts
+    // Select top two card counts.
+    match counts
         .into_iter()
         .dropping(1)
         .sorted()
         .rev()
         .take(2)
         .collect_tuple()
-        .unwrap();
-    match (top1, top2) {
+        .unwrap()
+    {
         (5, 0) => 7,
         (4, 1) => 6,
         (3, 2) => 5,
