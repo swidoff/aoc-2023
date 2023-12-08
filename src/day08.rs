@@ -1,8 +1,6 @@
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter;
 
 // use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
@@ -56,26 +54,29 @@ fn steps_to_z(
     count
 }
 
+fn gcd(a: u64, b: u64) -> u64 {
+    let mut a = a;
+    let mut b = b;
+    while b != 0 {
+        let new_b = a % b;
+        a = b;
+        b = new_b
+    }
+    a
+}
+
+fn lcm(a: u64, b: u64) -> u64 {
+    a * b / gcd(a, b)
+}
+
 fn part2(input: impl Iterator<Item = String>) -> u64 {
     let (instructions, nodes) = parse_input(input);
-    let mut cycle = nodes
+    nodes
         .keys()
         .filter(|&k| k.ends_with("A"))
         .map(|node| steps_to_z(node, &instructions, &nodes))
-        .collect_vec();
-    let mut turns = cycle.clone();
-
-    loop {
-        if let Ok(&v) = turns.iter().all_equal_value() {
-            if v > 0 {
-                break;
-            }
-        }
-
-        let i = turns.iter().position_min().unwrap();
-        turns[i] += cycle[i];
-    }
-    turns[0]
+        .reduce(|a, b| lcm(a, b))
+        .unwrap()
 }
 
 #[cfg(test)]
