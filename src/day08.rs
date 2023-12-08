@@ -29,60 +29,51 @@ fn parse_input(
 
 fn part1(input: impl Iterator<Item = String>) -> u64 {
     let (instructions, nodes) = parse_input(input);
-    let mut node = "AAA";
+    let node = "AAA".to_string();
+    steps_to_z(&node, &instructions, &nodes)
+}
+
+fn steps_to_z(
+    n: &String,
+    instructions: &Vec<char>,
+    nodes: &HashMap<String, (String, String)>,
+) -> u64 {
+    let mut node = n;
     let mut count = 0;
-    for i in instructions.iter().cycle() {
-        if node == "ZZZ" {
+    for &c in instructions.iter().cycle() {
+        let (left, right) = nodes.get(node).unwrap();
+        match c {
+            'L' => node = left,
+            'R' => node = right,
+            _ => panic!(),
+        }
+        count += 1;
+
+        if node.ends_with("Z") {
             break;
-        } else {
-            let (left, right) = nodes.get(node).unwrap();
-            match i {
-                'L' => node = left.as_str(),
-                'R' => node = right.as_str(),
-                _ => panic!(),
-            }
-            count += 1;
         }
     }
     count
 }
 
-fn cycle_iter<'a>(
-    n: &'a String,
-    instructions: &'a Vec<char>,
-    nodes: &'a HashMap<String, (String, String)>,
-) -> impl Iterator<Item = u64> + 'a {
-    let mut node = n;
-    let mut count = 0;
-    instructions.iter().cycle().filter_map(move |&c| {
-        if node.ends_with("Z") {
-            Some(count)
-        } else {
-            let (left, right) = nodes.get(node).unwrap();
-            match c {
-                'L' => node = left,
-                'R' => node = right,
-                _ => panic!(),
-            }
-            count += 1;
-            None
-        }
-    })
-}
-
-fn part2(input: impl Iterator<Item = String>) -> usize {
+fn part2(input: impl Iterator<Item = String>) -> u64 {
     let (instructions, nodes) = parse_input(input);
-    let mut start = nodes.keys().filter(|&k| k.ends_with("A")).collect_vec();
-    let mut iters = start
-        .into_iter()
-        .map(|n| cycle_iter(n, &instructions, &nodes))
+    let mut cycle = nodes
+        .keys()
+        .filter(|&k| k.ends_with("A"))
+        .map(|node| steps_to_z(node, &instructions, &nodes))
         .collect_vec();
-    let mut turns = iter::repeat(0).take(iters.len()).collect_vec();
+    let mut turns = cycle.clone();
 
-    while turns.iter().all_equal_value().is_ok() {
+    loop {
+        if let Ok(&v) = turns.iter().all_equal_value() {
+            if v > 0 {
+                break;
+            }
+        }
+
         let i = turns.iter().position_min().unwrap();
-        let new_turns = iters[i].next().unwrap();
-        turns[i] = i;
+        turns[i] += cycle[i];
     }
     turns[0]
 }
@@ -107,7 +98,7 @@ ZZZ = (ZZZ, ZZZ)
     fn test_part1() {
         let res = part1(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 19783);
     }
 
     const EXAMPLE2: &str = "LR
@@ -131,6 +122,6 @@ XXX = (XXX, XXX)
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 9177460370549);
     }
 }
