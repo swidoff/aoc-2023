@@ -19,13 +19,16 @@ fn parse_input(input: impl Iterator<Item = String>) -> Vec<Vec<i64>> {
 }
 
 fn next_value(v: Vec<i64>) -> i64 {
-    let seqs = seq_differences(v);
-    seqs.iter().rev().map(|v| v.last().unwrap()).sum()
+    seq_differences(v)
+        .iter()
+        .rev()
+        .map(|v| v.last().unwrap())
+        .sum()
 }
 
 fn previous_value(v: Vec<i64>) -> i64 {
-    let seqs = seq_differences(v);
-    seqs.iter()
+    seq_differences(v)
+        .iter()
         .rev()
         .map(|v| v.first().unwrap())
         .fold(0, |curr, &n| n - curr)
@@ -49,13 +52,14 @@ fn seq_differences(v: Vec<i64>) -> Vec<Vec<i64>> {
 }
 
 fn part1(input: impl Iterator<Item = String>) -> i64 {
-    let seqs = parse_input(input);
-    seqs.into_iter().map(|v| next_value(v)).sum()
+    parse_input(input).into_iter().map(|v| next_value(v)).sum()
 }
 
 fn part2(input: impl Iterator<Item = String>) -> i64 {
-    let seqs = parse_input(input);
-    seqs.into_iter().map(|v| previous_value(v)).sum()
+    parse_input(input)
+        .into_iter()
+        .map(|v| previous_value(v))
+        .sum()
 }
 
 #[cfg(test)]
