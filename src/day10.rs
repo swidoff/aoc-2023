@@ -1,7 +1,8 @@
-use itertools::Itertools;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
+use itertools::Itertools;
 
 // use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
@@ -23,7 +24,7 @@ fn targets_for_pipe(c: char, row: u64, column: u64) -> Option<[Coord; 2]> {
         'J' => Some([(row, column - 1), (row - 1, column)]),
         '7' => Some([(row + 1, column), (row, column - 1)]),
         'F' => Some([(row, column + 1), (row + 1, column)]), // Clockwise is first choice
-        c => panic!("{c}"),
+        _ => panic!(),
     }
 }
 
@@ -77,95 +78,51 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
     let mut map = parse_input(input);
     let start_loc = find_start_loc(&map);
     let loop_from_start = find_loop(&map, start_loc, start_char);
-    map[start_loc.0 as usize][start_loc.1 as usize] = start_char;
+    map[start_loc.0 as usize][start_loc.1 as usize] = start_char; // Replace start characters
 
     // Find the upper-left 'F' in the loop and move clockwise around the loop.
-    let loop_start_idx = loop_from_start.iter().position_min().unwrap();
-    let loop_start = loop_from_start[loop_start_idx];
-    let loop_from_top_left = find_loop(&map, loop_start, 'F');
+    let top_f_index = loop_from_start.iter().position_min().unwrap();
+    let loop_from_top_left = find_loop(&map, loop_from_start[top_f_index], 'F');
 
     let mut dir = 'N';
     let mut west_inside = HashMap::new();
 
+    // Walk around the loops and record whether a point just west of this tile is inside the loop.
     for &pos in loop_from_top_left.iter() {
         let mut char = map[pos.0 as usize][pos.1 as usize];
         if char == 'S' {
             char = start_char;
         }
 
-        // Record boundary and change direction.
-        match char {
-            'F' => match dir {
-                'W' => {
-                    dir = 'S';
-                    west_inside.insert(pos, true);
-                }
-                'N' => {
-                    dir = 'E';
-                    west_inside.insert(pos, false);
-                }
-                c => panic!("{c}"),
-            },
-            'J' => match dir {
-                'S' => {
-                    dir = 'W';
-                    west_inside.insert(pos, true);
-                }
-                'E' => {
-                    dir = 'N';
-                    west_inside.insert(pos, true);
-                }
-                _ => panic!(),
-            },
-            'L' => match dir {
-                'S' => {
-                    dir = 'E';
-                    west_inside.insert(pos, true);
-                }
-                'W' => {
-                    dir = 'N';
-                    west_inside.insert(pos, false);
-                }
-                _ => panic!(),
-            },
-            '7' => match dir {
-                'E' => {
-                    dir = 'S';
-                    west_inside.insert(pos, true);
-                }
-                'N' => {
-                    dir = 'W';
-                    west_inside.insert(pos, false);
-                }
-                _ => panic!(),
-            },
-            '|' => match dir {
-                'S' => {
-                    west_inside.insert(pos, true);
-                }
-                'N' => {
-                    west_inside.insert(pos, false);
-                }
-                _ => panic!(),
-            },
-            '-' => {
-                west_inside.insert(pos, true);
-            }
-            c => panic!("{c}"),
-        }
+        let (new_dir, west_inside_val) = match (char, dir) {
+            ('F', 'W') => ('S', true),
+            ('F', 'N') => ('E', false),
+            ('J', 'S') => ('W', true),
+            ('J', 'E') => ('N', true),
+            ('L', 'S') => ('E', true),
+            ('L', 'W') => ('N', false),
+            ('7', 'E') => ('S', true),
+            ('7', 'N') => ('W', false),
+            ('|', 'S') => (dir, true),
+            ('|', 'N') => (dir, false),
+            ('-', _) => (dir, true),
+            _ => panic!(),
+        };
+        dir = new_dir;
+        west_inside.insert(pos, west_inside_val);
     }
 
-    // Draw a ray to the west and find the first loop segment on the same row.
-    // Check if west is inside or outside of the loop.
+    // Draw a ray from each non-loop tile toward the east and find the first loop segment on the
+    // same row. Check if west of the loop tile is inside or outside of the loop.
     let mut count = 0;
     for row in 0..map.len() {
         for col in 0..map[row].len() {
             if !west_inside.contains_key(&(row as u64, col as u64)) {
-                let loop_segment = loop_from_top_left
+                let first_eastward_loop_pos = loop_from_top_left
                     .iter()
                     .filter(|&&(r, c)| row == r as usize && c as usize > col)
                     .min();
-                match loop_segment {
+                match first_eastward_loop_pos {
                     Some(c) if *west_inside.get(c).unwrap() => count += 1,
                     _ => {}
                 }
