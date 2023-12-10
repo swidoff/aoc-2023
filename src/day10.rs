@@ -115,13 +115,11 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
     for row in 0..map.len() {
         for col in 0..map[row].len() {
             if !west_inside.contains_key(&(row as u64, col as u64)) {
-                let first_eastward_loop_pos = loop_from_top_left
-                    .iter()
-                    .filter(|&&(r, c)| row == r as usize && c as usize > col)
-                    .min();
-                match first_eastward_loop_pos {
-                    Some(c) if *west_inside.get(c).unwrap() => inside_loop += 1,
-                    _ => {}
+                let is_inside = ((col + 1)..map[row].len())
+                    .find_map(|c| west_inside.get(&(row as u64, c as u64)).map(|&v| v))
+                    .unwrap_or(false);
+                if is_inside {
+                    inside_loop += 1;
                 }
             }
         }
