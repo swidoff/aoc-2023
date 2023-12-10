@@ -1,57 +1,21 @@
+use itertools::Itertools;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
 // use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/day10.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-type Coord = (usize, usize);
+type Coord = (u64, u64);
 
-struct Map {
-    start: Coord,
-    grid: HashMap<Coord, [Coord; 2]>,
-    rows: usize,
-    cols: usize,
-    points: Vec<Coord>,
+fn parse_input(input: impl Iterator<Item = String>) -> Vec<Vec<char>> {
+    input.map(|line| line.chars().collect_vec()).collect_vec()
 }
 
-fn parse_input(input: impl Iterator<Item = String>) -> Map {
-    let mut start = None;
-    let mut grid = HashMap::new();
-    let mut points = Vec::new();
-
-    for (row, line) in input.enumerate() {
-        let row = row + 1;
-        for (column, c) in line.chars().enumerate() {
-            let column = column + 1;
-            let pos = (row, column);
-            if c == 'S' {
-                start = Some(pos);
-            } else if c == '.' {
-                points.push(pos);
-            } else if let Some(target) = targets_for_pipe(c, row, column) {
-                grid.insert(pos, target);
-            }
-        }
-    }
-
-    let start = start.unwrap();
-    if let Some(start_target) = ['|', '-', 'L', 'J', '7', 'F']
-        .into_iter()
-        .filter_map(|c| targets_for_pipe(c, start.0, start.1))
-        .find(|targets| targets.iter().all(|t| grid.contains_key(t)))
-    {
-        grid.insert(start, start_target);
-    }
-
-    let rows = grid.keys().map(|&(rows, _)| rows).max().unwrap();
-    let cols = grid.keys().map(|&(_, cols)| cols).max().unwrap();
-    Map { start, grid, rows, cols, points }
-}
-
-fn targets_for_pipe(c: char, row: usize, column: usize) -> Option<[Coord; 2]> {
+fn targets_for_pipe(c: char, row: u64, column: u64) -> Option<[Coord; 2]> {
     match c {
         '|' => Some([(row - 1, column), (row + 1, column)]),
         '-' => Some([(row, column - 1), (row, column + 1)]),
@@ -63,31 +27,46 @@ fn targets_for_pipe(c: char, row: usize, column: usize) -> Option<[Coord; 2]> {
     }
 }
 
-fn find_loop(map: &Map) -> HashSet<Coord> {
-    let grid = &map.grid;
-    let start = map.start;
-    let mut q = VecDeque::new();
-    let mut seen = HashSet::new();
-
-    q.push_back(start);
-
-    while let Some(pos) = q.pop_front() {
-        seen.insert(pos);
-
-        if let Some(targets) = grid.get(&pos) {
-            for &t in targets {
-                if grid.contains_key(&t) && !seen.contains(&t) {
-                    q.push_back(t);
-                }
+fn find_loop(grid: &Vec<Vec<char>>, start_char: char) -> Vec<Coord> {
+    // Find the start character.
+    let mut start_loc = (0, 0);
+    for row in 0..grid.len() {
+        for col in 0..grid[row].len() {
+            if grid[row][col] == 'S' {
+                start_loc = (row as u64, col as u64);
+                break;
             }
         }
     }
-    seen
+
+    // Travel around the loop until you return to the same coord.
+    let mut res = Vec::new();
+    res.push(start_loc);
+
+    let mut prior_loc = start_loc;
+    let mut current_loc = targets_for_pipe(start_char, start_loc.0, start_loc.1).unwrap()[0];
+    let mut current_char = grid[current_loc.0 as usize][current_loc.1 as usize];
+
+    while current_char != 'S' {
+        let (row, col) = current_loc;
+        res.push(current_loc);
+
+        let next_loc = *targets_for_pipe(current_char, row, col)
+            .unwrap()
+            .iter()
+            .find(|&&c| c != prior_loc)
+            .unwrap();
+        prior_loc = current_loc;
+        current_loc = next_loc;
+        current_char = grid[next_loc.0 as usize][next_loc.1 as usize];
+    }
+
+    res
 }
 
-fn part1(input: impl Iterator<Item = String>) -> u64 {
+fn part1(input: impl Iterator<Item = String>, start_char: char) -> u64 {
     let map = parse_input(input);
-    find_loop(&map).len() as u64 / 2
+    find_loop(&map, start_char).len() as u64 / 2
 }
 
 fn part2(input: impl Iterator<Item = String>) -> usize {
@@ -117,13 +96,13 @@ LJ...
 
     #[test]
     fn test_part1_example() {
-        assert_eq!(part1(EXAMPLE1.lines().map(|v| v.to_string())), 4);
-        assert_eq!(part1(EXAMPLE2.lines().map(|v| v.to_string())), 8);
+        assert_eq!(part1(EXAMPLE1.lines().map(|v| v.to_string()), 'F'), 4);
+        assert_eq!(part1(EXAMPLE2.lines().map(|v| v.to_string()), 'F'), 8);
     }
 
     #[test]
     fn test_part1() {
-        let res = part1(read_file());
+        let res = part1(read_file(), 'J');
         println!("{}", res);
         assert_eq!(res, 6697);
     }
