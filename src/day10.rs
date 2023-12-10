@@ -89,11 +89,7 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
 
     // Walk around the loops and record whether a point just west of this tile is inside the loop.
     for &pos in loop_from_top_left.iter() {
-        let mut char = map[pos.0 as usize][pos.1 as usize];
-        if char == 'S' {
-            char = start_char;
-        }
-
+        let char = map[pos.0 as usize][pos.1 as usize];
         let (new_dir, west_inside_val) = match (char, dir) {
             ('F', 'W') => ('S', true),
             ('F', 'N') => ('E', false),
@@ -113,8 +109,9 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
     }
 
     // Draw a ray from each non-loop tile toward the east and find the first loop segment on the
-    // same row. Check if west of the loop tile is inside or outside of the loop.
-    let mut count = 0;
+    // same row. If just west of the loop tile is inside the loop, the non-loop tile is inside the
+    // loop.
+    let mut inside_loop = 0;
     for row in 0..map.len() {
         for col in 0..map[row].len() {
             if !west_inside.contains_key(&(row as u64, col as u64)) {
@@ -123,14 +120,13 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
                     .filter(|&&(r, c)| row == r as usize && c as usize > col)
                     .min();
                 match first_eastward_loop_pos {
-                    Some(c) if *west_inside.get(c).unwrap() => count += 1,
+                    Some(c) if *west_inside.get(c).unwrap() => inside_loop += 1,
                     _ => {}
                 }
             }
         }
     }
-
-    count
+    inside_loop
 }
 
 #[cfg(test)]
