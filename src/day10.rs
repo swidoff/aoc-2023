@@ -22,7 +22,7 @@ fn targets_for_pipe(c: char, row: u64, column: u64) -> Option<[Coord; 2]> {
         'L' => Some([(row, column + 1), (row - 1, column)]),
         'J' => Some([(row, column - 1), (row - 1, column)]),
         '7' => Some([(row + 1, column), (row, column - 1)]),
-        'F' => Some([(row, column + 1), (row + 1, column)]),
+        'F' => Some([(row, column + 1), (row + 1, column)]), // Clockwise is first choice
         c => panic!("{c}"),
     }
 }
@@ -76,18 +76,18 @@ fn part1(input: impl Iterator<Item = String>, start_char: char) -> u64 {
 fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
     let mut map = parse_input(input);
     let start_loc = find_start_loc(&map);
-    let loop_pos1 = find_loop(&map, start_loc, start_char);
+    let loop_from_start = find_loop(&map, start_loc, start_char);
     map[start_loc.0 as usize][start_loc.1 as usize] = start_char;
 
     // Find the upper-left 'F' in the loop and move clockwise around the loop.
-    let loop_start_idx = loop_pos1.iter().position_min().unwrap();
-    let loop_start = loop_pos1[loop_start_idx];
-    let loop_pos = find_loop(&map, loop_start, 'F');
+    let loop_start_idx = loop_from_start.iter().position_min().unwrap();
+    let loop_start = loop_from_start[loop_start_idx];
+    let loop_from_top_left = find_loop(&map, loop_start, 'F');
 
     let mut dir = 'N';
     let mut west_inside = HashMap::new();
 
-    for &pos in loop_pos.iter() {
+    for &pos in loop_from_top_left.iter() {
         let mut char = map[pos.0 as usize][pos.1 as usize];
         if char == 'S' {
             char = start_char;
@@ -161,7 +161,7 @@ fn part2(input: impl Iterator<Item = String>, start_char: char) -> usize {
     for row in 0..map.len() {
         for col in 0..map[row].len() {
             if !west_inside.contains_key(&(row as u64, col as u64)) {
-                let loop_segment = loop_pos
+                let loop_segment = loop_from_top_left
                     .iter()
                     .filter(|&&(r, c)| row == r as usize && c as usize > col)
                     .min();
