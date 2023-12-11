@@ -11,23 +11,23 @@ fn read_file() -> impl Iterator<Item = String> {
 
 type Coord = (i64, i64);
 
-fn parse_input(input: impl Iterator<Item = String>, multiplier: i64) -> HashSet<Coord> {
+fn parse_input(input: impl Iterator<Item = String>, multiplier: i64) -> Vec<Coord> {
     let grid = input.map(|line| line.chars().collect_vec()).collect_vec();
     let dim = grid.len();
     let empty_rows: HashSet<usize> = (0..dim)
-        .filter(|&r| (0..dim).all(|c| grid[r][c] == '.'))
+        .filter(|&r| grid[r].iter().all(|&c| c == '.'))
         .collect();
     let empty_cols: HashSet<usize> = (0..dim)
         .filter(|&c| (0..dim).all(|r| grid[r][c] == '.'))
         .collect();
 
-    let mut res = HashSet::new();
+    let mut res = Vec::new();
     let mut row = 0;
     for i in 0..dim {
         let mut col = 0;
         for j in 0..dim {
             if grid[i][j] == '#' {
-                res.insert((row as i64, col as i64));
+                res.push((row, col));
             }
 
             if empty_cols.contains(&j) {
@@ -59,12 +59,12 @@ fn sum_of_distances(galaxies: Vec<Coord>) -> i64 {
 }
 
 fn part1(input: impl Iterator<Item = String>) -> i64 {
-    let galaxies = parse_input(input, 2).into_iter().collect_vec();
+    let galaxies = parse_input(input, 2);
     sum_of_distances(galaxies)
 }
 
 fn part2(input: impl Iterator<Item = String>, multiplier: i64) -> i64 {
-    let galaxies = parse_input(input, multiplier).into_iter().collect_vec();
+    let galaxies = parse_input(input, multiplier);
     sum_of_distances(galaxies)
 }
 
