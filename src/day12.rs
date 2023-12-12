@@ -35,7 +35,7 @@ fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
     }
 
     let mut count = 0;
-    if is_complete(line, group_size, groups.len() == 1) {
+    if is_group_complete(line, group_size, groups.len() == 1) {
         if groups.len() > 1 {
             count += count_arrangements(
                 String::from_iter(line.chars().dropping(group_size + 1)),
@@ -52,7 +52,7 @@ fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
     count
 }
 
-fn is_complete(line: &str, group_size: usize, last_group: bool) -> bool {
+fn is_group_complete(line: &str, group_size: usize, last_group: bool) -> bool {
     line.len() >= group_size
         && line.chars().take(group_size).all(|c| c == '#' || c == '?')
         && (line.len() == group_size
