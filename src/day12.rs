@@ -29,7 +29,8 @@ fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
     let line = line.trim_start_matches(".");
     let group_size = groups[0];
 
-    if line.len() < group_size {
+    let min_length = groups.iter().sum::<usize>() + groups.len() - 1;
+    if line.len() < min_length {
         return 0;
     }
 
@@ -45,8 +46,7 @@ fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
         }
     }
 
-    let min_length = groups.iter().sum::<usize>() + groups.len() - 1;
-    if line.len() > min_length && line[0..].starts_with("?") {
+    if line[0..].starts_with("?") {
         count += count_arrangements(line[1..].to_string(), groups);
     }
     count
