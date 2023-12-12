@@ -1,106 +1,82 @@
-use itertools::Itertools;
 use std::fs::File;
-use std::io::{stdout, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader};
 use std::iter;
-
 use std::str::FromStr;
+
+use itertools::Itertools;
+use memoize::memoize;
+
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/day12.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-struct Group {
-    line: Vec<char>,
-    groups: Vec<usize>,
-}
-
-fn parse_input(input: impl Iterator<Item = String>) -> Vec<Group> {
+fn parse_input(input: impl Iterator<Item = String>) -> Vec<(String, Vec<usize>)> {
     input
         .map(|line| {
             let (line, groups) = line.split_once(" ").unwrap();
-            let line = line
-                .chars()
-                .map(|c| if c == '.' { ' ' } else { c })
-                .collect_vec();
             let groups = groups
                 .split(",")
                 .map(|s| usize::from_str(s).unwrap())
                 .collect_vec();
-            Group { line, groups }
+            (line.to_string(), groups)
         })
         .collect_vec()
 }
 
-fn list_arrangements(group: &Group) -> Vec<Vec<char>> {
-    let num_unknown = group.line.iter().filter(|&&c| c == '?').count();
-    let num_known = group.line.iter().filter(|&&c| c == '#').count();
-    let num_required: usize = group.groups.iter().sum();
-    let num_to_replace = num_required - num_known;
+#[memoize]
+fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
+    let mut count = 0;
+    let line = line.trim_start_matches(".");
+    let group_size = groups[0];
 
-    let mut res = Vec::new();
-    for replacements in (0..num_unknown).combinations(num_to_replace) {
-        let mut new_line = group.line.clone();
-
-        let mut source_i = 0;
-        let mut replacement_i = 0;
-        for j in 0..new_line.len() {
-            if new_line[j] == '?' {
-                if replacement_i < replacements.len() && replacements[replacement_i] == source_i {
-                    new_line[j] = '#';
-                    replacement_i += 1;
-                } else {
-                    new_line[j] = ' ';
-                }
-                source_i += 1;
+    if line.len() >= group_size && is_complete(line, group_size, groups.len() == 1) {
+        if groups.len() > 1 {
+            if line.len() > group_size + 1 {
+                count +=
+                    count_arrangements(line[group_size + 1..].to_owned(), groups[1..].to_owned());
             }
-        }
-
-        let counts = String::from_iter(&new_line)
-            .split_whitespace()
-            .map(|g| g.len())
-            .collect_vec();
-        if counts == group.groups {
-            res.push(new_line);
+        } else {
+            count += 1;
         }
     }
-    res
+
+    let min_length = groups.iter().sum::<usize>() + groups.len() - 1;
+    if line.len() > min_length && line[0..].starts_with("?") {
+        count += count_arrangements(line[1..].to_string(), groups);
+    }
+    count
+}
+
+fn is_complete(line: &str, group_size: usize, last_group: bool) -> bool {
+    line.len() >= group_size
+        && line.chars().take(group_size).all(|c| c == '#' || c == '?')
+        && (line.len() == group_size
+            || line[group_size..].starts_with(".")
+            || line[group_size..].starts_with("?"))
+        && (!last_group || !line.chars().dropping(group_size).any(|c| c == '#'))
 }
 
 fn part1(input: impl Iterator<Item = String>) -> usize {
-    let groups = parse_input(input);
-    groups.iter().map(|g| list_arrangements(g).len()).sum()
-}
-
-fn part2(input: impl Iterator<Item = String>) -> usize {
-    let groups = parse_input(input);
-    groups
-        .iter()
-        .enumerate()
-        .map(|(i, g1)| {
-            let g2 = Group {
-                line: g1
-                    .line
-                    .iter()
-                    .map(|&c| c)
-                    .chain(iter::once('?'))
-                    .chain(g1.line.iter().map(|&c| c))
-                    .collect_vec(),
-                groups: g1.groups.repeat(2),
-            };
-
-            let count1 = list_arrangements(g1).len();
-            let count2 = list_arrangements(&g2).len();
-            let possible_answer = count2.pow(4) / count1.pow(3);
-            println!("{} {} {} {}", i, count1, count2, possible_answer);
-            _ = stdout().flush();
-            possible_answer
-        })
+    parse_input(input)
+        .into_iter()
+        .map(|(line, groups)| count_arrangements(line, groups))
         .sum()
 }
 
+fn part2(input: impl Iterator<Item = String>) -> usize {
+    parse_input(input)
+        .into_iter()
+        .map(|(line, groups)| {
+            let line = iter::repeat(line).take(5).join("?");
+            let groups = groups.repeat(5);
+            count_arrangements(line, groups)
+        })
+        .sum()
+}
 #[cfg(test)]
 mod tests {
-    use super::{part1, part2, read_file};
+    use super::{count_arrangements, part1, part2, read_file};
 
     const EXAMPLE1: &str = "???.### 1,1,3
 .??..??...?##. 1,1,3
@@ -112,6 +88,7 @@ mod tests {
 
     #[test]
     fn test_part1_example() {
+        assert_eq!(count_arrangements(".???????#?".to_string(), vec![1, 4]), 7);
         assert_eq!(part1(EXAMPLE1.lines().map(|v| v.to_string())), 21);
     }
 
@@ -131,6 +108,6 @@ mod tests {
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 4546215031609);
     }
 }
