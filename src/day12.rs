@@ -26,16 +26,20 @@ fn parse_input(input: impl Iterator<Item = String>) -> Vec<(String, Vec<usize>)>
 
 #[memoize]
 fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
-    let mut count = 0;
     let line = line.trim_start_matches(".");
     let group_size = groups[0];
 
-    if line.len() >= group_size && is_complete(line, group_size, groups.len() == 1) {
+    if line.len() < group_size {
+        return 0;
+    }
+
+    let mut count = 0;
+    if is_complete(line, group_size, groups.len() == 1) {
         if groups.len() > 1 {
-            if line.len() > group_size + 1 {
-                count +=
-                    count_arrangements(line[group_size + 1..].to_owned(), groups[1..].to_owned());
-            }
+            count += count_arrangements(
+                String::from_iter(line.chars().dropping(group_size + 1)),
+                groups[1..].to_owned(),
+            );
         } else {
             count += 1;
         }
