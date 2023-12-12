@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{stdout, BufRead, BufReader, Write};
+use std::iter;
 
 use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
@@ -30,13 +31,13 @@ fn parse_input(input: impl Iterator<Item = String>) -> Vec<Group> {
         .collect_vec()
 }
 
-fn count_arrangements(group: &Group) -> usize {
+fn list_arrangements(group: &Group) -> Vec<Vec<char>> {
     let num_unknown = group.line.iter().filter(|&&c| c == '?').count();
     let num_known = group.line.iter().filter(|&&c| c == '#').count();
     let num_required: usize = group.groups.iter().sum();
     let num_to_replace = num_required - num_known;
 
-    let mut res = 0;
+    let mut res = Vec::new();
     for replacements in (0..num_unknown).combinations(num_to_replace) {
         let mut new_line = group.line.clone();
 
@@ -54,12 +55,12 @@ fn count_arrangements(group: &Group) -> usize {
             }
         }
 
-        let counts = String::from_iter(new_line)
+        let counts = String::from_iter(&new_line)
             .split_whitespace()
             .map(|g| g.len())
             .collect_vec();
         if counts == group.groups {
-            res += 1;
+            res.push(new_line);
         }
     }
     res
@@ -67,11 +68,35 @@ fn count_arrangements(group: &Group) -> usize {
 
 fn part1(input: impl Iterator<Item = String>) -> usize {
     let groups = parse_input(input);
-    groups.iter().map(|g| count_arrangements(g)).sum()
+    groups.iter().map(|g| list_arrangements(g).len()).sum()
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u64 {
-    unimplemented!()
+fn part2(input: impl Iterator<Item = String>) -> usize {
+    let groups = parse_input(input);
+    groups
+        .iter()
+        .enumerate()
+        .map(|(i, g1)| {
+            let g2 = Group {
+                line: g1
+                    .line
+                    .iter()
+                    .map(|&c| c)
+                    .chain(iter::once('?'))
+                    .chain(g1.line.iter().map(|&c| c))
+                    .collect_vec(),
+                groups: g1.groups.repeat(2),
+            };
+
+            let arr1 = list_arrangements(g1).len();
+            let arr2 = list_arrangements(&g2).len();
+
+            let possible_answer = arr2.pow(4) / arr1.pow(3);
+            println!("{} {} {} {}", i, arr1, arr2, possible_answer);
+            _ = stdout().flush();
+            possible_answer
+        })
+        .sum()
 }
 
 #[cfg(test)]
@@ -98,12 +123,9 @@ mod tests {
         assert_eq!(res, 6981);
     }
 
-    const EXAMPLE2: &str = "
-";
-
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
+        assert_eq!(part2(EXAMPLE1.lines().map(|v| v.to_string())), 525152);
     }
 
     #[test]
