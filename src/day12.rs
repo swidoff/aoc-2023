@@ -88,11 +88,10 @@ fn part2(input: impl Iterator<Item = String>) -> usize {
                 groups: g1.groups.repeat(2),
             };
 
-            let arr1 = list_arrangements(g1).len();
-            let arr2 = list_arrangements(&g2).len();
-
-            let possible_answer = arr2.pow(4) / arr1.pow(3);
-            println!("{} {} {} {}", i, arr1, arr2, possible_answer);
+            let count1 = list_arrangements(g1).len();
+            let count2 = list_arrangements(&g2).len();
+            let possible_answer = count2.pow(4) / count1.pow(3);
+            println!("{} {} {} {}", i, count1, count2, possible_answer);
             _ = stdout().flush();
             possible_answer
         })
