@@ -25,46 +25,36 @@ fn parse_input(input: impl Iterator<Item = String>) -> Vec<(String, Vec<usize>)>
 }
 
 #[memoize]
-fn count_arrangements(line: String, groups: Vec<usize>) -> usize {
-    let line = line.trim_start_matches(".");
-    let group_size = groups[0];
-
-    let min_length = groups.iter().sum::<usize>() + groups.len() - 1;
-    if line.len() < min_length {
-        return 0;
+fn num_arrangements(line: String, num_in_group: usize, groups: Vec<usize>) -> usize {
+    if line.is_empty() {
+        return if num_in_group == 0 && groups.is_empty() { 1 } else { 0 };
     }
 
     let mut count = 0;
-    if is_group_complete(line, group_size, groups.len() == 1) {
-        if groups.len() > 1 {
-            count += count_arrangements(
-                String::from_iter(line.chars().dropping(group_size + 1)),
-                groups[1..].to_owned(),
-            );
-        } else {
-            count += 1;
+    let c = line.chars().next().unwrap();
+    let next = if c == '?' { vec!['#', '.'] } else { vec![c] };
+
+    for n in next {
+        if n == '.' {
+            if num_in_group > 0 {
+                if num_in_group == groups[0] {
+                    count += num_arrangements(line[1..].to_string(), 0, groups[1..].to_owned())
+                }
+            } else {
+                count += num_arrangements(line[1..].to_string(), num_in_group, groups.clone())
+            }
+        } else if !groups.is_empty() && num_in_group < groups[0] {
+            count += num_arrangements(line[1..].to_string(), num_in_group + 1, groups.clone());
         }
     }
 
-    if line[0..].starts_with("?") {
-        count += count_arrangements(line[1..].to_string(), groups);
-    }
     count
-}
-
-fn is_group_complete(line: &str, group_size: usize, last_group: bool) -> bool {
-    line.len() >= group_size
-        && line.chars().take(group_size).all(|c| c == '#' || c == '?')
-        && (line.len() == group_size
-            || line[group_size..].starts_with(".")
-            || line[group_size..].starts_with("?"))
-        && (!last_group || !line.chars().dropping(group_size).any(|c| c == '#'))
 }
 
 fn part1(input: impl Iterator<Item = String>) -> usize {
     parse_input(input)
         .into_iter()
-        .map(|(line, groups)| count_arrangements(line, groups))
+        .map(|(line, groups)| num_arrangements(line + ".", 0, groups))
         .sum()
 }
 
@@ -74,13 +64,13 @@ fn part2(input: impl Iterator<Item = String>) -> usize {
         .map(|(line, groups)| {
             let line = iter::repeat(line).take(5).join("?");
             let groups = groups.repeat(5);
-            count_arrangements(line, groups)
+            num_arrangements(line + ".", 0, groups)
         })
         .sum()
 }
 #[cfg(test)]
 mod tests {
-    use super::{count_arrangements, part1, part2, read_file};
+    use super::{num_arrangements, part1, part2, read_file};
 
     const EXAMPLE1: &str = "???.### 1,1,3
 .??..??...?##. 1,1,3
@@ -92,8 +82,35 @@ mod tests {
 
     #[test]
     fn test_part1_example() {
-        assert_eq!(count_arrangements(".???????#?".to_string(), vec![1, 4]), 7);
+        assert_eq!(
+            num_arrangements("???.###.".to_string(), 0, vec![1, 1, 3]),
+            1
+        );
+        assert_eq!(
+            num_arrangements(".??..??...?##.".to_string(), 0, vec![1, 1, 3]),
+            4
+        );
+        assert_eq!(
+            num_arrangements("?#?#?#?#?#?#?#?.".to_string(), 0, vec![1, 3, 1, 6]),
+            1
+        );
+        assert_eq!(
+            num_arrangements("????.#...#....".to_string(), 0, vec![4, 1, 1]),
+            1
+        );
+        assert_eq!(
+            num_arrangements("????.######..#####.".to_string(), 0, vec![1, 6, 5]),
+            4
+        );
+        assert_eq!(
+            num_arrangements("?###????????.".to_string(), 0, vec![3, 2, 1]),
+            10
+        );
         assert_eq!(part1(EXAMPLE1.lines().map(|v| v.to_string())), 21);
+        assert_eq!(
+            num_arrangements(".???????#?.".to_string(), 0, vec![1, 4]),
+            7
+        );
     }
 
     #[test]
