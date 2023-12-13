@@ -45,7 +45,7 @@ fn is_horizontal_fold(grid: &Vec<Vec<char>>, row: usize) -> bool {
     let n_rows = grid.len();
     let mut i = row as i64;
     let mut j = row + 1;
-    while i >= 0 && j < grid.len() {
+    while i >= 0 && j < n_rows {
         if !(0..n_cols).all(|c| grid[i as usize][c] == grid[j][c]) {
             return false;
         }
@@ -103,7 +103,7 @@ fn count_horizontal_fold_diffs(grid: &Vec<Vec<char>>, row: usize) -> usize {
     let mut j = row + 1;
     let mut count = 0;
 
-    while i >= 0 && j < grid.len() {
+    while i >= 0 && j < n_rows {
         count += (0..n_cols)
             .filter(|&c| grid[i as usize][c] != grid[j][c])
             .count();
@@ -121,7 +121,6 @@ fn part2(input: impl Iterator<Item = String>) -> usize {
         let n_rows = grid.len();
         for col in 0..n_cols - 1 {
             let count = count_vertical_fold_diffs(&grid, col);
-            println!("col: {col}, count: {count}");
             if count == 1 {
                 res += col + 1;
                 continue;
@@ -129,7 +128,6 @@ fn part2(input: impl Iterator<Item = String>) -> usize {
         }
         for row in 0..n_rows - 1 {
             let count = count_horizontal_fold_diffs(&grid, row);
-            println!("row: {row}, count: {count}");
             if count == 1 {
                 res += 100 * (row + 1);
                 continue;
