@@ -31,23 +31,22 @@ fn num_arrangements(line: String, num_in_group: usize, groups: Vec<usize>) -> us
     }
 
     let mut count = 0;
-    let c = line.chars().next().unwrap();
-    let next = if c == '?' { vec!['#', '.'] } else { vec![c] };
+    let c = &line[0..1];
 
-    for n in next {
-        if n == '.' {
-            if num_in_group > 0 {
-                if num_in_group == groups[0] {
-                    count += num_arrangements(line[1..].to_string(), 0, groups[1..].to_owned())
-                }
-            } else {
-                count += num_arrangements(line[1..].to_string(), num_in_group, groups.clone())
+    if c == "." || c == "?" {
+        if num_in_group > 0 {
+            if num_in_group == groups[0] {
+                count += num_arrangements(line[1..].to_string(), 0, groups[1..].to_owned())
             }
-        } else if !groups.is_empty() && num_in_group < groups[0] {
+        } else {
+            count += num_arrangements(line[1..].to_string(), num_in_group, groups.clone())
+        }
+    }
+    if c == "#" || c == "?" {
+        if !groups.is_empty() && num_in_group < groups[0] {
             count += num_arrangements(line[1..].to_string(), num_in_group + 1, groups.clone());
         }
     }
-
     count
 }
 
