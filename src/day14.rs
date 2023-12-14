@@ -114,22 +114,33 @@ fn part1(input: impl Iterator<Item = String>) -> usize {
     count_load(&grid)
 }
 
-fn part2(input: impl Iterator<Item = String>) -> Vec<usize> {
-    // let mut load_map = HashMap::new();
+fn part2(input: impl Iterator<Item = String>, iterations: usize) -> Option<usize> {
     let mut load_vec = Vec::new();
+    let mut load_map = HashMap::new();
     let mut grid = parse_input(input);
-    for i in 0..200usize {
+    for j in 0..iterations {
         tilt_north(&mut grid);
         tilt_west(&mut grid);
         tilt_south(&mut grid);
         tilt_east(&mut grid);
 
         let curr_load = count_load(&grid);
+        // println!("{} {}:", j + 1, curr_load);
+
+        if let Some(&i) = load_map.get(&grid) {
+            let cycle_len = j - i;
+            if cycle_len > 3 {
+                let offset = i + 1;
+                let index = (1_000_000_000 - offset) % cycle_len + offset - 1;
+                // println!("Done: offset={offset}, cycle_len={cycle_len}");
+                return Some(load_vec[index]);
+            }
+        }
+
+        load_map.insert(grid.clone(), j);
         load_vec.push(curr_load);
-        println!("{} {}:", i + 1, curr_load);
-        // print_grid(&grid);
     }
-    load_vec
+    None
 }
 
 #[cfg(test)]
@@ -162,14 +173,15 @@ O.#..O.#.#
 
     #[test]
     fn test_part2_example() {
-        let res = part2(EXAMPLE1.lines().map(|v| v.to_string()));
-        assert_eq!(res[(1000000000 - 2) % 7 + 2 - 1], 64);
+        assert_eq!(
+            part2(EXAMPLE1.lines().map(|v| v.to_string()), 50).expect("No cycle"),
+            64
+        );
     }
 
     #[test]
     fn test_part2() {
-        let res = part2(read_file());
-        let res = res[(1000000000 - 93) % 34 + 93 - 1];
+        let res = part2(read_file(), 150).expect("No cycle");
         println!("{}", res);
         assert_eq!(res, 112452);
     }
