@@ -55,12 +55,8 @@ fn count_energized(grid: &Vec<Vec<char>>, initial: State) -> usize {
             ],
             _ => vec![State { row: row + dir_row, col: col + dir_col, ..state }],
         };
-        for new_state in new_states {
-            if new_state.row >= 0
-                && new_state.row < dim
-                && new_state.col >= 0
-                && new_state.col < dim
-            {
+        for new_state @ State { row, col, .. } in new_states {
+            if row >= 0 && row < dim && col >= 0 && col < dim {
                 q.push_back(new_state);
             }
         }
