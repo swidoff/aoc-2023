@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-// use std::str::FromStr;
+
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/dayX.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
