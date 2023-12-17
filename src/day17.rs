@@ -1,16 +1,19 @@
-use itertools::Itertools;
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::collections::{BinaryHeap, HashMap};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
+use itertools::Itertools;
 
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/day17.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-fn parse_input(input: impl Iterator<Item = String>) -> Vec<Vec<char>> {
-    input.map(|line| line.chars().collect_vec()).collect_vec()
+fn parse_input(input: impl Iterator<Item = String>) -> Vec<Vec<u32>> {
+    input
+        .map(|line| line.chars().map(|c| c.to_digit(10).unwrap()).collect_vec())
+        .collect_vec()
 }
 
 const NORTH: i8 = 0;
@@ -18,7 +21,7 @@ const EAST: i8 = 1;
 const SOUTH: i8 = 2;
 const WEST: i8 = 3;
 
-fn min_heat_loss(grid: &mut Vec<Vec<char>>, min_steps_to_turn: i32, max_forward_steps: i32) -> u32 {
+fn min_heat_loss(grid: &Vec<Vec<u32>>, min_steps_to_turn: i32, max_forward_steps: i32) -> u32 {
     let dim = grid.len() as i32;
     let mut distances = HashMap::new();
     let mut q = BinaryHeap::new();
@@ -54,10 +57,7 @@ fn min_heat_loss(grid: &mut Vec<Vec<char>>, min_steps_to_turn: i32, max_forward_
                 && ((new_dir + 2) % 4 != dir)
             {
                 let new_steps = if dir == new_dir { steps + 1 } else { 1 };
-                let new_dist = distance
-                    + grid[new_row as usize][new_col as usize]
-                        .to_digit(10)
-                        .unwrap();
+                let new_dist = distance + grid[new_row as usize][new_col as usize];
                 q.push(Reverse((new_dist, new_row, new_col, new_steps, new_dir)));
             }
         }
@@ -66,13 +66,13 @@ fn min_heat_loss(grid: &mut Vec<Vec<char>>, min_steps_to_turn: i32, max_forward_
 }
 
 fn part1(input: impl Iterator<Item = String>) -> u32 {
-    let mut grid = parse_input(input);
-    min_heat_loss(&mut grid, 0, 3)
+    let grid = parse_input(input);
+    min_heat_loss(&grid, 0, 3)
 }
 
 fn part2(input: impl Iterator<Item = String>) -> u32 {
-    let mut grid = parse_input(input);
-    min_heat_loss(&mut grid, 4, 10)
+    let grid = parse_input(input);
+    min_heat_loss(&grid, 4, 10)
 }
 
 #[cfg(test)]
