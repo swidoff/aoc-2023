@@ -25,9 +25,8 @@ fn min_heat_loss(grid: &Vec<Vec<u32>>, min_steps_to_turn: i32, max_forward_steps
     let dim = grid.len() as i32;
     let mut distances = HashMap::new();
     let mut q = BinaryHeap::new();
-    let mut res = 10_000_000;
+    let mut res = 0;
     q.push(Reverse((0, 0, 0, 1, EAST)));
-    q.push(Reverse((0, 0, 0, 1, SOUTH)));
 
     while let Some(Reverse((distance, row, col, steps, dir))) = q.pop() {
         if let Some(&old_distance) = distances.get(&(row, col, steps, dir)) {
@@ -38,8 +37,8 @@ fn min_heat_loss(grid: &Vec<Vec<u32>>, min_steps_to_turn: i32, max_forward_steps
         distances.insert((row, col, steps, dir), distance);
 
         if row == dim - 1 && col == dim - 1 {
-            res = res.min(distance);
-            continue;
+            res = distance;
+            break;
         }
 
         for (new_row, new_col, new_dir) in [
