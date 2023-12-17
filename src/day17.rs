@@ -18,8 +18,7 @@ const EAST: i8 = 1;
 const SOUTH: i8 = 2;
 const WEST: i8 = 3;
 
-fn part1(input: impl Iterator<Item = String>) -> u32 {
-    let mut grid = parse_input(input);
+fn min_heat_loss(grid: &mut Vec<Vec<char>>, min_steps_to_turn: i32, max_forward_steps: i32) -> u32 {
     let dim = grid.len() as i32;
     let mut distances = HashMap::new();
     let mut q = BinaryHeap::new();
@@ -50,7 +49,8 @@ fn part1(input: impl Iterator<Item = String>) -> u32 {
                 && new_row < dim
                 && new_col >= 0
                 && new_col < dim
-                && (new_dir != dir || steps < 3)
+                && (new_dir != dir || steps < max_forward_steps)
+                && (new_dir == dir || steps >= min_steps_to_turn)
                 && ((new_dir + 2) % 4 != dir)
             {
                 let new_steps = if dir == new_dir { steps + 1 } else { 1 };
@@ -65,8 +65,14 @@ fn part1(input: impl Iterator<Item = String>) -> u32 {
     res
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u64 {
-    unimplemented!()
+fn part1(input: impl Iterator<Item = String>) -> u32 {
+    let mut grid = parse_input(input);
+    min_heat_loss(&mut grid, 0, 3)
+}
+
+fn part2(input: impl Iterator<Item = String>) -> u32 {
+    let mut grid = parse_input(input);
+    min_heat_loss(&mut grid, 4, 10)
 }
 
 #[cfg(test)]
@@ -102,18 +108,15 @@ mod tests {
         // 925 <-- low
     }
 
-    const EXAMPLE2: &str = "
-";
-
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
+        assert_eq!(part2(EXAMPLE1.lines().map(|v| v.to_string())), 94);
     }
 
     #[test]
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 1135);
     }
 }
