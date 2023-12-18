@@ -1,89 +1,26 @@
-use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::str::FromStr;
 
 use itertools::Itertools;
-use std::str::FromStr;
 
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/day18.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
 }
 
-fn parse_input(input: impl Iterator<Item = String>) -> Vec<(char, i32, String)> {
+fn parse_input(input: impl Iterator<Item = String>) -> Vec<(char, i64)> {
     input
         .map(|line| {
             let (dir, num, color) = line.split_whitespace().collect_tuple().unwrap();
             let (dir,) = dir.chars().take(1).collect_tuple().unwrap();
-            let num = num.parse::<i32>().unwrap();
-            let color = color[2..2 + 6].to_string();
-            (dir, num, color)
-        })
-        .collect_vec()
-}
-
-fn part1(input: impl Iterator<Item = String>) -> usize {
-    let plan = parse_input(input);
-    let mut r = 0;
-    let mut c = 0;
-    let mut edges = HashMap::new();
-
-    for (dir, num, color) in plan.into_iter() {
-        let (row_delta, col_delta) = match dir {
-            'U' => (-1, 0),
-            'R' => (0, 1),
-            'D' => (1, 0),
-            'L' => (0, -1),
-            _ => panic!(),
-        };
-        for _ in 0..num {
-            r += row_delta;
-            c += col_delta;
-            edges.insert((r, c), color.clone());
-        }
-    }
-
-    let &(min_r, min_c) = edges.keys().min().unwrap();
-    let mut seen = HashSet::new();
-    let mut q = VecDeque::new();
-    q.push_back((min_r + 1, min_c + 1));
-    while let Some(p @ (r, c)) = q.pop_front() {
-        if seen.contains(&p) {
-            continue;
-        }
-        seen.insert(p);
-
-        for new_p in [(r - 1, c), (r, c - 1), (r + 1, c), (r, c + 1)] {
-            if !edges.contains_key(&new_p) {
-                q.push_back(new_p);
-            }
-        }
-    }
-
-    edges.len() + seen.len()
-}
-
-fn parse_input2(input: impl Iterator<Item = String>) -> Vec<(char, i64)> {
-    input
-        .map(|line| {
-            let (_dir, _num, color) = line.split_whitespace().collect_tuple().unwrap();
-            let color = color[2..2 + 6].to_string();
-            let num = i64::from_str_radix(&color[0..color.len() - 1], 16).unwrap();
-            let dir = match i64::from_str(&color[color.len() - 1..]).unwrap() {
-                0 => 'R',
-                1 => 'D',
-                2 => 'L',
-                3 => 'U',
-                _ => panic!(),
-            };
+            let num = num.parse::<i64>().unwrap();
             (dir, num)
         })
         .collect_vec()
 }
 
-fn part2(input: impl Iterator<Item = String>) -> i64 {
-    // let plan = parse_input(input);
-    let plan = parse_input2(input);
+fn area(plan: Vec<(char, i64)>) -> i64 {
     let mut vertices = Vec::new();
     let mut x = 0;
     let mut y = 0;
@@ -106,28 +43,21 @@ fn part2(input: impl Iterator<Item = String>) -> i64 {
             _ => panic!(),
         };
 
-        let (x_delta, y_delta) = match (dir, next_inside, prior_inside) {
-            ('L', false, false) => (-*num - 1, 0),
-            ('L', false, true) => (-*num, 0),
-            ('L', true, false) => (-*num, 0),
-            ('L', true, true) => (-*num + 1, 0),
-            ('D', false, false) => (0, *num + 1),
-            ('D', false, true) => (0, *num),
-            ('D', true, false) => (0, *num),
-            ('D', true, true) => (0, *num - 1),
-            ('R', false, false) => (*num + 1, 0),
-            ('R', false, true) => (*num, 0),
-            ('R', true, false) => (*num, 0),
-            ('R', true, true) => (*num - 1, 0),
-            ('U', false, false) => (0, -*num - 1),
-            ('U', false, true) => (0, -*num),
-            ('U', true, false) => (0, -*num),
-            ('U', true, true) => (0, -*num + 1),
+        match (dir, next_inside, prior_inside) {
+            ('L', false, false) => x += -*num - 1,
+            ('L', true, true) => x += -*num + 1,
+            ('L', _, _) => x += -*num,
+            ('D', false, false) => y += *num + 1,
+            ('D', true, true) => y += *num - 1,
+            ('D', _, _) => y += *num,
+            ('R', false, false) => x += *num + 1,
+            ('R', true, true) => x += *num - 1,
+            ('R', _, _) => x += *num,
+            ('U', false, false) => y += -*num - 1,
+            ('U', true, true) => y += -*num + 1,
+            ('U', _, _) => y += -*num,
             _ => panic!(),
         };
-
-        x += x_delta;
-        y += y_delta;
         prior_inside = next_inside;
         vertices.push((x, y));
     }
@@ -140,6 +70,33 @@ fn part2(input: impl Iterator<Item = String>) -> i64 {
         area += len
     }
     area / 2
+}
+
+fn part1(input: impl Iterator<Item = String>) -> i64 {
+    let plan = parse_input(input);
+    area(plan)
+}
+
+fn parse_input2(input: impl Iterator<Item = String>) -> Vec<(char, i64)> {
+    input
+        .map(|line| {
+            let (_dir, _num, color) = line.split_whitespace().collect_tuple().unwrap();
+            let color = color[2..2 + 6].to_string();
+            let num = i64::from_str_radix(&color[0..color.len() - 1], 16).unwrap();
+            let dir = match i64::from_str(&color[color.len() - 1..]).unwrap() {
+                0 => 'R',
+                1 => 'D',
+                2 => 'L',
+                3 => 'U',
+                _ => panic!(),
+            };
+            (dir, num)
+        })
+        .collect_vec()
+}
+
+fn part2(input: impl Iterator<Item = String>) -> i64 {
+    area(parse_input2(input))
 }
 
 #[cfg(test)]
