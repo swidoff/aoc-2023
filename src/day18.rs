@@ -91,8 +91,7 @@ fn part2(input: impl Iterator<Item = String>) -> i64 {
     let mut prior_inside = false;
 
     // In order to use the shoelace formula, we need to convert the row/column edge to x,y
-    // vertices where the edges are in the inside of line segments describe by the vertices.
-    // The walk around the edge is luckily clockwise, so inside is to the right.
+    // vertices where the edges are inside the line segments describe by the vertices.
     for (i, (dir, num)) in plan.iter().enumerate() {
         let next_dir = if i < plan.len() - 1 { plan[i + 1].0 } else { plan[0].0 };
         let next_inside = match (dir, next_dir) {
