@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -25,10 +25,6 @@ fn part1(input: impl Iterator<Item = String>) -> usize {
     let plan = parse_input(input);
     let mut r = 0;
     let mut c = 0;
-    let mut min_r = 1_000_000;
-    let mut max_r = 0;
-    let mut min_c = 1_000_000;
-    let mut max_c = 0;
     let mut edges = HashMap::new();
 
     for (dir, num, color) in plan.into_iter() {
@@ -42,57 +38,28 @@ fn part1(input: impl Iterator<Item = String>) -> usize {
         for _ in 0..num {
             r += row_delta;
             c += col_delta;
-            max_r = max_r.max(r);
-            max_c = max_c.max(c);
-            min_r = min_r.min(r);
-            min_c = min_c.min(c);
             edges.insert((r, c), color.clone());
         }
     }
 
-    let mut count = edges.len();
-    for r in min_r..=max_r {
-        let mut row = Vec::new();
-        let mut seen_first_edge = false;
-        for c in min_c..=max_c {
-            if edges.contains_key(&(r, c)) {
-                seen_first_edge = true;
-                row.push('#');
-                continue;
-            }
+    let &(min_r, min_c) = edges.keys().min().unwrap();
+    let mut seen = HashSet::new();
+    let mut q = VecDeque::new();
+    q.push_back((min_r + 1, min_c + 1));
+    while let Some(p @ (r, c)) = q.pop_front() {
+        if seen.contains(&p) {
+            continue;
+        }
+        seen.insert(p);
 
-            if !seen_first_edge {
-                row.push('.');
-                continue;
-            }
-
-            let mut edge_count = 0;
-            let mut consecutive_edges = 0;
-            for c1 in (c + 1..=max_c) {
-                if edges.contains_key(&(r, c1)) {
-                    if consecutive_edges == 0 {
-                        edge_count += 1;
-                    }
-                    consecutive_edges += 1;
-                } else {
-                    consecutive_edges = 0;
-                }
-            }
-
-            // let edge_count = (c + 1..=max_c)
-            //     .filter_map(|c1| edges.get(&(r, c1)))
-            //     .unique()
-            //     .count();
-            if edge_count % 2 == 1 {
-                count += 1;
-                row.push('*');
-            } else {
-                row.push('.');
+        for new_p in [(r - 1, c), (r, c - 1), (r + 1, c), (r, c + 1)] {
+            if !edges.contains_key(&new_p) {
+                q.push_back(new_p);
             }
         }
-        println!("{}", String::from_iter(row.iter()));
     }
-    count
+
+    edges.len() + seen.len()
 }
 
 fn part2(input: impl Iterator<Item = String>) -> u64 {
