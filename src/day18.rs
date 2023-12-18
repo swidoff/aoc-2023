@@ -12,7 +12,7 @@ fn read_file() -> impl Iterator<Item = String> {
 fn parse_input(input: impl Iterator<Item = String>) -> Vec<(char, i64)> {
     input
         .map(|line| {
-            let (dir, num, color) = line.split_whitespace().collect_tuple().unwrap();
+            let (dir, num, _color) = line.split_whitespace().collect_tuple().unwrap();
             let (dir,) = dir.chars().take(1).collect_tuple().unwrap();
             let num = num.parse::<i64>().unwrap();
             (dir, num)
