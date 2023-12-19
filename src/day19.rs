@@ -119,8 +119,47 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
         .sum()
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u64 {
-    unimplemented!()
+fn count_combinations(
+    dest: &Destination,
+    workflows: &HashMap<String, Workflow>,
+    ranges: [[u64; 2]; 4],
+) -> u64 {
+    let mut combinations = 0;
+    let workflow_name;
+
+    match dest {
+        Destination::Accept => return ranges.iter().map(|[b, e]| e - b + 1).product::<u64>(),
+        Destination::Reject => return 0,
+        Destination::Workflow(name) => workflow_name = name,
+    }
+
+    let mut new_ranges = ranges.clone();
+    let workflow = workflows.get(workflow_name).unwrap();
+
+    for (prop, op, value, dest) in &workflow.rules {
+        let mut next_ranges = new_ranges.clone();
+        match op {
+            Op::Gt => {
+                next_ranges[*prop][0] = *value + 1;
+                new_ranges[*prop][1] = *value;
+            }
+            Op::Lt => {
+                next_ranges[*prop][1] = *value - 1;
+                new_ranges[*prop][0] = *value;
+            }
+        }
+        combinations += count_combinations(dest, workflows, next_ranges)
+    }
+    combinations + count_combinations(&workflow.otherwise, workflows, new_ranges)
+}
+
+fn part2(input: impl Iterator<Item = String>) -> u64 {
+    let (workflows, _) = parse_input(input);
+    count_combinations(
+        &Destination::Workflow("in".to_string()),
+        &workflows,
+        [[1, 4000]; 4],
+    )
 }
 
 #[cfg(test)]
@@ -159,18 +198,18 @@ hdj{m>838:A,pv}
         // 348875
     }
 
-    const EXAMPLE2: &str = "
-";
-
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
+        assert_eq!(
+            part2(EXAMPLE1.lines().map(|v| v.to_string())),
+            167409079868000
+        );
     }
 
     #[test]
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 125455345557345);
     }
 }
