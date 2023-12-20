@@ -19,3 +19,4 @@ mod day18;
 mod day19;
 mod day20;
 mod template;
+mod util;

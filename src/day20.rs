@@ -1,10 +1,10 @@
 use crate::day20::Module::{Broadcaster, Conjunction};
+use crate::util;
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-// use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
     let file = File::open("input/day20.txt").unwrap();
     BufReader::new(file).lines().map(|s| s.unwrap())
@@ -16,7 +16,7 @@ enum Pulse {
     High = 1,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum Module {
     Broadcaster,
     FlipFlip { on: bool },
@@ -56,9 +56,13 @@ fn parse_input(
 fn push_button(
     connections: &HashMap<String, Vec<String>>,
     modules: &HashMap<String, Module>,
-) -> (u64, u64, HashMap<String, Module>) {
-    let mut low_count = 0;
-    let mut high_count = 0;
+) -> (
+    HashMap<String, u64>,
+    HashMap<String, u64>,
+    HashMap<String, Module>,
+) {
+    let mut low_count = HashMap::new();
+    let mut high_count = HashMap::new();
     let mut new_modules = modules.clone();
 
     let button = "button".to_string();
@@ -68,9 +72,9 @@ fn push_button(
 
     while let Some((name, pulse, from)) = q.pop_front() {
         if pulse == Pulse::High {
-            high_count += 1;
+            high_count.insert(name.clone(), high_count.get(name).unwrap_or(&0) + 1);
         } else {
-            low_count += 1;
+            low_count.insert(name.clone(), low_count.get(name).unwrap_or(&0) + 1);
         }
         let new_pulse = match new_modules.get_mut(name) {
             Some(Broadcaster) => Some(pulse),
@@ -100,7 +104,6 @@ fn push_button(
 
         if let Some(new_pulse) = new_pulse {
             for dest in connections.get(name).unwrap() {
-                println!("{name} -{new_pulse:?} -> {dest}");
                 q.push_back((dest, new_pulse, name));
             }
         }
@@ -115,17 +118,41 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
     let mut low_count = 0;
     let mut high_count = 0;
     for _ in 0..1000 {
-        println!("--");
         let (l, h, m) = push_button(&connections, &modules);
         modules = m;
-        low_count += l;
-        high_count += h;
+        low_count += l.values().sum::<u64>();
+        high_count += h.values().sum::<u64>();
     }
     low_count * high_count
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u64 {
-    unimplemented!()
+fn count_until_single_low(
+    connections: &HashMap<String, Vec<String>>,
+    modules: &HashMap<String, Module>,
+    target: &str,
+) -> Option<u64> {
+    let target = target.to_string();
+    let mut modules = modules.clone();
+    for i in 1..=10_000 {
+        let (l, _h, m) = push_button(&connections, &modules);
+        if let Some(1) = l.get(&target) {
+            return Some(i);
+        }
+        modules = m;
+    }
+    None
+}
+
+fn part2(input: impl Iterator<Item = String>) -> u64 {
+    // By inspection, four sub-graphs are connected by a conjunction.
+    // When all fire a high signal at once, then rx will get low signal.
+    // Luckily, they all fire a high signal in a repeating cycle.
+    let (connections, modules) = parse_input(input);
+    let cycle1 = count_until_single_low(&connections, &modules, "rr").unwrap();
+    let cycle2 = count_until_single_low(&connections, &modules, "js").unwrap();
+    let cycle3 = count_until_single_low(&connections, &modules, "bs").unwrap();
+    let cycle4 = count_until_single_low(&connections, &modules, "zb").unwrap();
+    util::lcm(cycle1, util::lcm(cycle2, util::lcm(cycle3, cycle4)))
 }
 
 #[cfg(test)]
@@ -160,14 +187,9 @@ mod tests {
     }
 
     #[test]
-    fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
-    }
-
-    #[test]
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 225872806380073);
     }
 }

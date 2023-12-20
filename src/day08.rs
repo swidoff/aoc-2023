@@ -1,3 +1,4 @@
+use crate::util;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -54,28 +55,13 @@ fn steps_to_z(
     count
 }
 
-fn gcd(a: u64, b: u64) -> u64 {
-    let mut a = a;
-    let mut b = b;
-    while b != 0 {
-        let new_b = a % b;
-        a = b;
-        b = new_b
-    }
-    a
-}
-
-fn lcm(a: u64, b: u64) -> u64 {
-    a * b / gcd(a, b)
-}
-
 fn part2(input: impl Iterator<Item = String>) -> u64 {
     let (instructions, nodes) = parse_input(input);
     nodes
         .keys()
         .filter(|&k| k.ends_with("A"))
         .map(|node| steps_to_z(node, &instructions, &nodes))
-        .reduce(|a, b| lcm(a, b))
+        .reduce(|a, b| util::lcm(a, b))
         .unwrap()
 }
 
