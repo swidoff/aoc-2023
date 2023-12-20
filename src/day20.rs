@@ -55,15 +55,10 @@ fn parse_input(
 
 fn push_button(
     connections: &HashMap<String, Vec<String>>,
-    modules: &HashMap<String, Module>,
-) -> (
-    HashMap<String, u64>,
-    HashMap<String, u64>,
-    HashMap<String, Module>,
-) {
+    modules: &mut HashMap<String, Module>,
+) -> (HashMap<String, u64>, HashMap<String, u64>) {
     let mut low_count = HashMap::new();
     let mut high_count = HashMap::new();
-    let mut new_modules = modules.clone();
 
     let button = "button".to_string();
     let broadcaster = "broadcaster".to_string();
@@ -76,7 +71,7 @@ fn push_button(
         } else {
             low_count.insert(name.clone(), low_count.get(name).unwrap_or(&0) + 1);
         }
-        let new_pulse = match new_modules.get_mut(name) {
+        let new_pulse = match modules.get_mut(name) {
             Some(Broadcaster) => Some(pulse),
             Some(Module::FlipFlip { on }) => {
                 if let Pulse::Low = pulse {
@@ -108,18 +103,15 @@ fn push_button(
             }
         }
     }
-
-    (low_count, high_count, new_modules)
+    (low_count, high_count)
 }
 
 fn part1(input: impl Iterator<Item = String>) -> u64 {
-    let (connections, modules) = parse_input(input);
-    let mut modules = modules;
+    let (connections, mut modules) = parse_input(input);
     let mut low_count = 0;
     let mut high_count = 0;
     for _ in 0..1000 {
-        let (l, h, m) = push_button(&connections, &modules);
-        modules = m;
+        let (l, h) = push_button(&connections, &mut modules);
         low_count += l.values().sum::<u64>();
         high_count += h.values().sum::<u64>();
     }
@@ -133,14 +125,10 @@ fn count_until_single_low(
 ) -> Option<u64> {
     let target = target.to_string();
     let mut modules = modules.clone();
-    for i in 1..=10_000 {
-        let (l, _h, m) = push_button(&connections, &modules);
-        if let Some(1) = l.get(&target) {
-            return Some(i);
-        }
-        modules = m;
-    }
-    None
+    (1..=10_000).find(|_| {
+        let (l, _h) = push_button(&connections, &mut modules);
+        l.get(&target) == Some(&1)
+    })
 }
 
 fn part2(input: impl Iterator<Item = String>) -> u64 {
@@ -148,11 +136,11 @@ fn part2(input: impl Iterator<Item = String>) -> u64 {
     // When all fire a high signal at once, then rx will get low signal.
     // Luckily, they all fire a high signal in a repeating cycle.
     let (connections, modules) = parse_input(input);
-    let cycle1 = count_until_single_low(&connections, &modules, "rr").unwrap();
-    let cycle2 = count_until_single_low(&connections, &modules, "js").unwrap();
-    let cycle3 = count_until_single_low(&connections, &modules, "bs").unwrap();
-    let cycle4 = count_until_single_low(&connections, &modules, "zb").unwrap();
-    util::lcm(cycle1, util::lcm(cycle2, util::lcm(cycle3, cycle4)))
+    ["rr", "js", "bs", "zb"]
+        .iter()
+        .map(|t| count_until_single_low(&connections, &modules, t).unwrap())
+        .reduce(util::lcm)
+        .unwrap()
 }
 
 #[cfg(test)]
