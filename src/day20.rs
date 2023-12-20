@@ -53,23 +53,25 @@ fn parse_input(
     (connections, modules)
 }
 
-fn push_button(
-    connections: &HashMap<String, Vec<String>>,
-    modules: &mut HashMap<String, Module>,
-) -> (HashMap<String, u64>, HashMap<String, u64>) {
+fn push_button<'a>(
+    connections: &'a HashMap<String, Vec<String>>,
+    modules: &'a mut HashMap<String, Module>,
+) -> (HashMap<&'a String, u64>, HashMap<&'a String, u64>) {
     let mut low_count = HashMap::new();
     let mut high_count = HashMap::new();
 
-    let button = "button".to_string();
-    let broadcaster = "broadcaster".to_string();
+    let broadcaster = connections.keys().find(|&s| s == "broadcaster").unwrap();
     let mut q = VecDeque::new();
-    q.push_back((&broadcaster, Pulse::Low, &button));
+    for dest in connections.get(broadcaster).unwrap() {
+        q.push_back((dest, Pulse::Low, broadcaster));
+    }
+    low_count.insert(broadcaster, 1);
 
     while let Some((name, pulse, from)) = q.pop_front() {
         if pulse == Pulse::High {
-            high_count.insert(name.clone(), high_count.get(name).unwrap_or(&0) + 1);
+            high_count.insert(name, high_count.get(name).unwrap_or(&0) + 1);
         } else {
-            low_count.insert(name.clone(), low_count.get(name).unwrap_or(&0) + 1);
+            low_count.insert(name, low_count.get(name).unwrap_or(&0) + 1);
         }
         let new_pulse = match modules.get_mut(name) {
             Some(Broadcaster) => Some(pulse),
