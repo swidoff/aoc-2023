@@ -1,4 +1,3 @@
-use crate::day20::Module::{Broadcaster, Conjunction};
 use crate::util;
 use itertools::Itertools;
 use std::collections::{HashMap, VecDeque};
@@ -18,7 +17,6 @@ enum Pulse {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 enum Module {
-    Broadcaster,
     FlipFlip { on: bool },
     Conjunction { inputs: HashMap<String, bool> },
 }
@@ -30,21 +28,27 @@ fn parse_input(
     let mut modules = HashMap::new();
     for line in input {
         let (module, dest) = line.split_once(" -> ").unwrap();
+        let dest = dest.split(", ").map(|s| s.to_string()).collect_vec();
+        if module == "broadcaster" {
+            connections.insert(module.to_string(), dest);
+            continue;
+        }
+
         let (module, module_name) = match &module[0..1] {
             "%" => (Module::FlipFlip { on: false }, module[1..].to_string()),
             "&" => (
-                Conjunction { inputs: HashMap::new() },
+                Module::Conjunction { inputs: HashMap::new() },
                 module[1..].to_string(),
             ),
-            _ => (Broadcaster, module.to_string()),
+            _ => panic!(),
         };
-        let dest = dest.split(", ").map(|s| s.to_string()).collect_vec();
+
         connections.insert(module_name.clone(), dest);
         modules.insert(module_name, module);
     }
     for (source, destinations) in connections.iter() {
         for dest in destinations {
-            if let Some(Conjunction { inputs, .. }) = modules.get_mut(dest) {
+            if let Some(Module::Conjunction { inputs, .. }) = modules.get_mut(dest) {
                 inputs.insert(source.clone(), false);
             }
         }
@@ -74,7 +78,6 @@ fn push_button<'a>(
             low_count.insert(name, low_count.get(name).unwrap_or(&0) + 1);
         }
         let new_pulse = match modules.get_mut(name) {
-            Some(Broadcaster) => Some(pulse),
             Some(Module::FlipFlip { on }) => {
                 if let Pulse::Low = pulse {
                     if *on {
@@ -88,7 +91,7 @@ fn push_button<'a>(
                     None
                 }
             }
-            Some(Conjunction { inputs }) => {
+            Some(Module::Conjunction { inputs }) => {
                 inputs.insert(from.clone(), pulse == Pulse::High);
                 if inputs.values().all(|&b| b) {
                     Some(Pulse::Low)
