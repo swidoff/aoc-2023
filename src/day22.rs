@@ -1,7 +1,8 @@
-use itertools::Itertools;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
+use itertools::Itertools;
 
 // use std::str::FromStr;
 fn read_file() -> impl Iterator<Item = String> {
@@ -103,11 +104,9 @@ fn part2(input: impl Iterator<Item = String>) -> usize {
     let mut pieces = parse_input(input);
     let supporting = support_graph(&mut pieces);
 
-    let mut res = 0;
-    for i in 0..pieces.len() {
-        res += falling_count(i, &supporting);
-    }
-    res
+    (0..pieces.len())
+        .map(|i| falling_count(i, &supporting))
+        .sum()
 }
 
 #[cfg(test)]
