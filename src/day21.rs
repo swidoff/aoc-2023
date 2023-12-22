@@ -85,16 +85,6 @@ fn count_plots(input: impl Iterator<Item = String> + Sized, max_steps: usize) ->
     //     println!();
     // }
 
-    // for m in [65, 65 + 131, 65 + 131 * 2] {
-    //     let tot: i64 = steps_count[1..=m]
-    //         .iter()
-    //         .enumerate()
-    //         .filter(|(steps, count)| steps % 2 == m % 2)
-    //         .map(|(steps, count)| count)
-    //         .sum();
-    //     println!("{},{tot}", m);
-    // }
-
     steps_count
         .iter()
         .enumerate()
@@ -202,7 +192,7 @@ mod tests {
         // 65, 65 + 131 and 65 + 131*2.
         //
         // We'll adjust our target x by performing the same transformation to arrive at an x in
-        // the same units as our interpolation:  multiples of 131 offset by 65.
+        // the same units as our interpolation: multiples of 131 offset by 65.
         let target = (26_501_365. - 65.) / 131.;
         let res = a * target * target + b * target + c;
 
