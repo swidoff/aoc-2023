@@ -22,7 +22,7 @@ fn parse_input(input: impl Iterator<Item = String>) -> Vec<[usize; 6]> {
         .collect_vec()
 }
 
-fn support_graph(pieces: &mut Vec<[usize; 6]>) -> (Vec<Vec<usize>>, Vec<usize>) {
+fn support_graph(pieces: &mut Vec<[usize; 6]>) -> Vec<Vec<usize>> {
     pieces.sort_by_key(|v| v[4]);
 
     let mut max_z = 1;
@@ -62,24 +62,14 @@ fn support_graph(pieces: &mut Vec<[usize; 6]>) -> (Vec<Vec<usize>>, Vec<usize>) 
         max_z = max_z.max(new_z + z_len);
     }
 
-    let required = (0..pieces.len())
-        .filter(|&i| !supporting.iter().any(|v| v.len() == 1 && v[0] == i))
-        .collect_vec();
-
-    (supporting, required)
-}
-
-fn part1(input: impl Iterator<Item = String>) -> usize {
-    let mut pieces = parse_input(input);
-    let (_, required) = support_graph(&mut pieces);
-    required.len()
+    supporting
 }
 
 fn falling_count(target: usize, supporting: &Vec<Vec<usize>>) -> usize {
     let mut falling = HashSet::new();
     falling.insert(target);
 
-    for _ in 0..supporting.len() {
+    for _ in target + 1..supporting.len() {
         let new_falling: HashSet<usize> = supporting
             .iter()
             .enumerate()
@@ -91,20 +81,31 @@ fn falling_count(target: usize, supporting: &Vec<Vec<usize>>) -> usize {
                 }
             })
             .collect();
+
+        if new_falling.len() == falling.len() - 1 {
+            break;
+        }
         falling.extend(new_falling);
     }
     falling.len() - 1
 }
 
+fn part1(input: impl Iterator<Item = String>) -> usize {
+    let mut pieces = parse_input(input);
+    let supporting = support_graph(&mut pieces);
+
+    (0..pieces.len())
+        .filter(|&i| !supporting.iter().any(|v| v.len() == 1 && v[0] == i))
+        .count()
+}
+
 fn part2(input: impl Iterator<Item = String>) -> usize {
     let mut pieces = parse_input(input);
-    let (supporting, required) = support_graph(&mut pieces);
+    let supporting = support_graph(&mut pieces);
 
     let mut res = 0;
     for i in 0..pieces.len() {
-        if !required.contains(&i) {
-            res += falling_count(i, &supporting);
-        }
+        res += falling_count(i, &supporting);
     }
     res
 }
@@ -144,8 +145,7 @@ mod tests {
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 60558);
         //82782 too high
-        //60558 too high
     }
 }
