@@ -65,9 +65,44 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
     longest_walk(grid, false)
 }
 
-fn part2(input: impl Iterator<Item = String>) -> u64 {
+fn longest_walk2(
+    grid: &Vec<Vec<char>>,
+    r: i32,
+    c: i32,
+    path: &mut HashSet<(i32, i32)>,
+) -> Option<usize> {
+    let dim = grid.len() as i32;
+    if (r, c) == (dim - 1, dim - 2) {
+        return Some(path.len());
+    }
+
+    let dirs = [(-1, 0), (0, -1), (1, 0), (0, 1)];
+    for (row_delta, col_delta) in dirs {
+        let new_r = r + row_delta;
+        let new_c = c + col_delta;
+        if new_r >= 0
+            && new_r < dim
+            && new_c >= 0
+            && new_c < dim
+            && !path.contains(&(new_r, new_c))
+            && grid[new_r as usize][new_c as usize] != '#'
+        {
+            path.insert((new_r, new_c));
+            let res = longest_walk2(grid, new_r, new_c, path);
+            if res.is_some() {
+                return res;
+            } else {
+                path.remove(&(new_r, new_c));
+            }
+        }
+    }
+    None
+}
+
+fn part2(input: impl Iterator<Item = String>) -> usize {
     let grid = parse_input(input);
-    longest_walk(grid, true)
+    let mut path = HashSet::new();
+    longest_walk2(&grid, 0, 1, &mut path).unwrap()
 }
 
 #[cfg(test)]
