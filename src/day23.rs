@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -65,44 +65,104 @@ fn part1(input: impl Iterator<Item = String>) -> u64 {
     longest_walk(grid, false)
 }
 
-fn longest_walk2(
-    grid: &Vec<Vec<char>>,
-    r: i32,
-    c: i32,
-    path: &mut HashSet<(i32, i32)>,
-) -> Option<usize> {
+fn to_graph(grid: &Vec<Vec<char>>) -> HashMap<(i32, i32), Vec<((i32, i32), usize)>> {
+    // Convert the difficult-to-work-with grid into a graph. Returns a map of edges
+    // (source -> destination) with associated number of steps
     let dim = grid.len() as i32;
-    if (r, c) == (dim - 1, dim - 2) {
-        return Some(path.len());
-    }
+    let mut seen = HashSet::new();
+    let mut q = VecDeque::new();
+    let mut res: HashMap<(i32, i32), Vec<((i32, i32), usize)>> = HashMap::new();
+    let dir = [(1, 0), (0, 1), (-1, 0), (0, -1)];
+    q.push_back(((0, 1), (1, 1)));
 
-    let dirs = [(-1, 0), (0, -1), (1, 0), (0, 1)];
-    for (row_delta, col_delta) in dirs {
-        let new_r = r + row_delta;
-        let new_c = c + col_delta;
-        if new_r >= 0
-            && new_r < dim
-            && new_c >= 0
-            && new_c < dim
-            && !path.contains(&(new_r, new_c))
-            && grid[new_r as usize][new_c as usize] != '#'
-        {
-            path.insert((new_r, new_c));
-            let res = longest_walk2(grid, new_r, new_c, path);
-            if res.is_some() {
-                return res;
+    while let Some(key @ (intersection, start)) = q.pop_front() {
+        if seen.contains(&key) {
+            continue;
+        }
+        seen.insert(key);
+
+        let mut steps = 1;
+        let mut p = start;
+        let mut prior_p = intersection;
+        let mut next_steps;
+        loop {
+            next_steps = Vec::new();
+            for (row_delta, col_delta) in dir {
+                let new_r = p.0 + row_delta;
+                let new_c = p.1 + col_delta;
+                let new_p = (new_r, new_c);
+                if new_r >= 0
+                    && new_r < dim
+                    && new_c >= 0
+                    && new_c < dim
+                    && grid[new_r as usize][new_c as usize] != '#'
+                    && new_p != prior_p
+                {
+                    next_steps.push(new_p);
+                }
+            }
+            if next_steps.len() != 1 {
+                break;
             } else {
-                path.remove(&(new_r, new_c));
+                steps += 1;
+                prior_p = p;
+                p = next_steps[0];
             }
         }
+
+        if let Some(v) = res.get_mut(&intersection) {
+            v.push((p, steps));
+        } else {
+            res.insert(intersection, vec![(p, steps)]);
+        }
+        for next in next_steps {
+            q.push_back((p, next))
+        }
     }
-    None
+    res
+}
+
+fn longest_walk2(
+    graph: &HashMap<(i32, i32), Vec<((i32, i32), usize)>>,
+    start: (i32, i32),
+    end: (i32, i32),
+    path: &mut HashSet<(i32, i32)>,
+) -> Option<usize> {
+    // With a map of edges, it's now much more efficient to do a simple DFS and find the result.
+    if path.contains(&start) {
+        return None;
+    }
+    if start == end {
+        return Some(0);
+    }
+
+    let mut res = None;
+    path.insert(start);
+    for &(next, dist) in graph.get(&start).unwrap() {
+        if let Some(new_steps) = longest_walk2(graph, next, end, path) {
+            res = Some(res.unwrap_or(0).max(dist + new_steps))
+        }
+    }
+    path.remove(&start);
+    res
 }
 
 fn part2(input: impl Iterator<Item = String>) -> usize {
     let grid = parse_input(input);
+    let graph = to_graph(&grid);
+    let dim = grid.len() as i32;
+
+    // Print graph in grapviz dot notation.
+    // println!("digraph G {{");
+    // for ((r1, c1), edges) in graph.iter() {
+    //     for ((r2, c2), steps) in edges {
+    //         println!("\tn_{r1}_{c1} -> n_{r2}_{c2} [label={steps}]")
+    //     }
+    // }
+    // println!("}}");
+    //
     let mut path = HashSet::new();
-    longest_walk2(&grid, 0, 1, &mut path).unwrap()
+    longest_walk2(&graph, (0, 1), (dim - 1, dim - 2), &mut path).unwrap()
 }
 
 #[cfg(test)]
@@ -142,7 +202,6 @@ mod tests {
     #[test]
     fn test_part1() {
         let res = part1(read_file());
-        // println!("{}", res);
         assert_eq!(res, 2186);
     }
 
@@ -155,6 +214,7 @@ mod tests {
     fn test_part2() {
         let res = part2(read_file());
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 6802);
+        // 5242 too low
     }
 }
