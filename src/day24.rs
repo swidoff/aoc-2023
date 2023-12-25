@@ -95,15 +95,12 @@ mod tests {
     fn test_part1() {
         let res = part1(read_file(), 200000000000000., 400000000000000.);
         println!("{}", res);
-        // assert_eq!(res, 0);
+        assert_eq!(res, 16050);
     }
-
-    const EXAMPLE2: &str = "
-";
 
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE2.lines().map(|v| v.to_string())), 0);
+        assert_eq!(part2(EXAMPLE1.lines().map(|v| v.to_string())), 47);
     }
 
     #[test]
@@ -113,3 +110,39 @@ mod tests {
         // assert_eq!(res, 0);
     }
 }
+
+/*
+19 - 2*n1 = x + vx*n1
+13 + 1*n1 = y + vy*n1
+30 - 2*n1 = z + vz*n1
+
+18 - 1*n2 = x + vx*n2
+19 - 1*n2 = y + vy*n2
+22 - 2*n2 = z + vz*n2
+
+20 - 2*n3 = x + vx*n3
+15 - 2*n3 = y + vy*n3
+34 - 4*n3 = z + vz*n3
+
+12 - 1*n4 = x + vx*n4
+31 - 2*n4 = y + vy*n4
+28 - 1*n4 = z + vz*n4
+
+20 + 1*n5 = x + vx*n5
+19 - 5*n5 = y + vy*n5
+15 - 3*n5 = z + vz*n5
+
+
+19 - 2*n1 = x + vx*n1
+-2*n1 - vx*n1 = x - 19
+n1*(-2 + vx) = x - 19
+
+n1 = (x - 19) / (-2 + vx)
+n1 = (y - 13) / (1 + vy)
+n1 = (z - 30) / (-2 + vz)
+
+(x - 19) / (-2 + vx) = (y - 13) / (1 + vy)
+(x - 19) * (1 + vy)  = (y - 13) * (-2 + vx)
+x + x*vy - 19 - 19*vy = -2*y + y*vx + 26 - 13*vx
+
+*/
