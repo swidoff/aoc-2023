@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -71,8 +72,132 @@ fn part1(input: impl Iterator<Item = String>, min_pos: f64, max_pos: f64) -> u64
     count
 }
 
-fn part2(_input: impl Iterator<Item = String>) -> u64 {
-    unimplemented!()
+fn parse_input2(input: impl Iterator<Item = String>) -> Vec<Vec<i64>> {
+    input
+        .map(|line| {
+            line.split(&[',', '@'])
+                .map(|s| s.parse::<i64>().unwrap())
+                .collect_vec()
+        })
+        .collect_vec()
+}
+
+fn choose_pos(hail: &Vec<Vec<i64>>, dim: usize, range: i64) -> Option<([i64; 3], [i64; 3])> {
+    let sorted = hail.iter().sorted_by_key(|h| h[dim]).collect_vec();
+    for v in -range..=range {
+        if v == 0 {
+            continue;
+        }
+        let all_first_hail = if v < 0 {
+            sorted
+                .iter()
+                .rev()
+                .take_while(|p| p[dim] == sorted[sorted.len() - 1][dim])
+                .collect_vec()
+        } else {
+            sorted
+                .iter()
+                .take_while(|p| p[dim] == sorted[0][dim])
+                .collect_vec()
+        };
+
+        for &first_hail in all_first_hail {
+            let mut path = Vec::new();
+            let mut seen = HashSet::new();
+            seen.insert(first_hail.clone());
+
+            let start = first_hail[dim] + first_hail[dim + 3] - v;
+            let mut n = 1;
+            let mut pos = start + v;
+            path.push((n, first_hail.clone()));
+
+            while seen.len() < hail.len() {
+                if let Some((next_i, next_n)) = hail
+                    .iter()
+                    .enumerate()
+                    .filter(|(_i, h)| !seen.contains(*h))
+                    .filter_map(|(i, h)| {
+                        let hv = h[dim + 3];
+                        let hpos = h[dim] + hv * n;
+                        if v == hv {
+                            return None;
+                        }
+                        let next_n = (hpos - pos) / (v - hv);
+                        if next_n > 0 {
+                            Some((i, next_n))
+                        } else {
+                            None
+                        }
+                    })
+                    .min_by_key(|(_i, next_n)| *next_n)
+                {
+                    pos += v * next_n;
+                    n += next_n;
+                    path.push((n, hail[next_i].clone()));
+                    seen.insert(hail[next_i].clone());
+                } else {
+                    break;
+                }
+            }
+
+            if seen.len() == hail.len() {
+                let mut xyz = [0; 3];
+                let mut vs = [0; 3];
+                xyz[dim] = start;
+                vs[dim] = v;
+
+                let mut valid = true;
+                for d in 0..3 {
+                    if d == dim {
+                        continue;
+                    }
+                    let start_d = path[0].1[d];
+                    let start_v = path[0].1[d + 3];
+                    let start_n = path[0].0;
+                    let start_pos = start_d + start_v * start_n;
+
+                    let next_d = path[1].1[d];
+                    let next_v = path[1].1[d + 3];
+                    let next_n = path[1].0;
+                    let next_pos = next_d + next_v * next_n;
+
+                    let v_d = (next_pos - start_pos) / (next_n - start_n);
+                    let our_start = start_d + start_n * start_v - v_d;
+
+                    if path.iter().all(|(n1, p1)| {
+                        let hail_pos = p1[d] + n1 * p1[d + 3];
+                        let our_pos = our_start + n1 * v_d;
+                        hail_pos == our_pos
+                    }) {
+                        xyz[d] = our_start;
+                        vs[d] = v_d;
+                    } else {
+                        valid = false;
+                        break;
+                    }
+                }
+                if valid {
+                    println!("{}, {:?}, {:?}", dim, xyz, vs);
+                    return Some((xyz, vs));
+                }
+            }
+        }
+    }
+    None
+}
+
+fn part2(input: impl Iterator<Item = String>, range: i64) -> i64 {
+    let hail = parse_input2(input);
+    // if let Some(([x, y, z], _)) = choose_pos(&hail, 0, range) {
+    //     return x + y + z;
+    // }
+    if let Some(([x, y, z], _)) = choose_pos(&hail, 1, range) {
+        return x + y + z;
+    }
+    if let Some(([x, y, z], _)) = choose_pos(&hail, 2, range) {
+        return x + y + z;
+    }
+    0
 }
 
 #[cfg(test)]
@@ -85,6 +210,21 @@ mod tests {
 12,31,28@-1,-2,-1
 20,19,15@1,-5,-3
 ";
+
+    /*
+     0  1  2  3  4  5  6
+    19 17 15 13 11  9  7  (17 - 2n) = (21 - 3n) -> (17 - 21)/(-3 - -2) = n     n = 4
+    18 17 16 15 13 13 12  (17 - 1n) = (21 - 3n) -> n = 2
+    20 18 16 14 12 10  8  (18 - 2n) = (21 - 3n) -> n = 3
+    12 11 10 09  8  7  6  (11 - 1n) = (21 - 3n) -> n = 5
+    20 21 22 23 24 25 25
+       21 18 15 12  9  6
+
+    (17 - 2n) = (21 - n) -> -4 = n
+    (17 - 1n) = (21 - n) -> 17 =
+    (18 - 2n) = (21 - n) -> -3 = n
+    (11 - 1n) = (21 - n) -> n = 5
+     */
 
     #[test]
     fn test_part1_example() {
@@ -100,12 +240,12 @@ mod tests {
 
     #[test]
     fn test_part2_example() {
-        assert_eq!(part2(EXAMPLE1.lines().map(|v| v.to_string())), 47);
+        assert_eq!(part2(EXAMPLE1.lines().map(|v| v.to_string()), 5), 47);
     }
 
     #[test]
     fn test_part2() {
-        let res = part2(read_file());
+        let res = part2(read_file(), 500);
         println!("{}", res);
         // assert_eq!(res, 0);
     }
